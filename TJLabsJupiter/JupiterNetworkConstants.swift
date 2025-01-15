@@ -56,4 +56,16 @@ public class JupiterNetworkConstants {
     public static func getRecServerVersion() -> String {
         return REC_SERVER_VERSION
     }
+    
+    public static func getUserLoginURL() -> String {
+        return USER_URL + "/" + USER_SERVER_VERSION + "/user"
+    }
+    
+    public static func getRecRfdURL() -> String {
+        return REC_URL + "/" + REC_SERVER_VERSION + "/rf"
+    }
+    
+    public static func getRecUvdURL() -> String {
+        return REC_URL + "/" + REC_SERVER_VERSION + "/uv"
+    }
 }
