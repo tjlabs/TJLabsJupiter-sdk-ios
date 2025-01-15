@@ -1,9 +1,12 @@
 import Foundation
+import SystemConfiguration
 import TJLabsCommon
 
-public class JupiterNetworkManager {
-    public static let shared = JupiterNetworkManager()
-
+class JupiterNetworkManager {
+    static let shared = JupiterNetworkManager()
+    
+    private let reachability = SCNetworkReachabilityCreateWithName(nil, "NetworkCheck")
+    
     private let rfdSessions: [URLSession]
     private let uvdSessions: [URLSession]
     private var rfdSessionCount = 0
@@ -13,7 +16,20 @@ public class JupiterNetworkManager {
         self.rfdSessions = JupiterNetworkManager.createSessionPool()
         self.uvdSessions = JupiterNetworkManager.createSessionPool()
     }
-
+    
+    func isConnectedToInternet() -> (Bool, String) {
+        var flags = SCNetworkReachabilityFlags()
+        SCNetworkReachabilityGetFlags(self.reachability!, &flags)
+        let isReachable = flags.contains(.reachable)
+        let needsConnection = flags.contains(.connectionRequired)
+        
+        if isReachable && !needsConnection {
+            return (true, "")
+        } else {
+            return (false, "Network Connection Fail, Check Wifi of Cellular connection")
+        }
+    }
+    
     // MARK: - Helper Methods
     private static func createSessionPool() -> [URLSession] {
         let config = URLSessionConfiguration.default
@@ -79,7 +95,7 @@ public class JupiterNetworkManager {
     }
 
     // MARK: - Public Methods
-    public func postUserLogin(url: String, input: LoginInput, completion: @escaping (Int, String) -> Void) {
+    func postUserLogin(url: String, input: LoginInput, completion: @escaping (Int, String) -> Void) {
         guard let body = encodeJson(input),
               let request = makeRequest(url: url, body: body) else {
             DispatchQueue.main.async { completion(406, "Invalid URL or failed to encode JSON") }
@@ -112,7 +128,7 @@ public class JupiterNetworkManager {
         }.resume()
     }
 
-    public func postReceivedForce(url: String, input: [ReceivedForce], completion: @escaping (Int, String, [ReceivedForce]) -> Void) {
+    func postReceivedForce(url: String, input: [ReceivedForce], completion: @escaping (Int, String, [ReceivedForce]) -> Void) {
         guard let body = encodeJson(input),
               let request = makeRequest(url: url, body: body) else {
             DispatchQueue.main.async { completion(406, "Invalid URL or failed to encode JSON", input) }
@@ -124,7 +140,7 @@ public class JupiterNetworkManager {
         performRequest(request: request, session: session, input: input, completion: completion)
     }
 
-    public func postUserVelocity(url: String, input: [UserVelocity], completion: @escaping (Int, String, [UserVelocity]) -> Void) {
+    func postUserVelocity(url: String, input: [UserVelocity], completion: @escaping (Int, String, [UserVelocity]) -> Void) {
         guard let body = encodeJson(input),
               let request = makeRequest(url: url, body: body) else {
             DispatchQueue.main.async { completion(406, "Invalid URL or failed to encode JSON", input) }
