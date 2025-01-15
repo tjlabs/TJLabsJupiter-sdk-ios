@@ -50,3 +50,8 @@ public struct FineLocationTrackingResult: Codable {
         self.validity_flag = 0
     }
 }
+
+protocol JupiterManagerDelegate: AnyObject {
+    func onJupiterResult(_ result: FineLocationTrackingResult)
+    func onJupiterError(_ code: Int, _ msg: String)
+}
