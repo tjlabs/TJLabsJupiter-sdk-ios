@@ -157,7 +157,7 @@ class JupiterNetworkManager {
     }
     
     func postFLT(url: String, input: FLT, completion: @escaping (Int, String, FLT) -> Void) {
-        let fltInput = input.fltInput
+        let fltInput: FineLocationTrackingInput = input.fltInput
         guard let body = encodeJson(fltInput),
               let request = makeRequest(url: url, body: body) else {
             DispatchQueue.main.async { completion(406, "Invalid URL or failed to encode JSON", input) }
