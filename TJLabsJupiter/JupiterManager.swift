@@ -16,7 +16,7 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
     private var isStartService = false
     private let sharedRfdDelegate = SharedRFDGeneratorDelegate()
     private let sharedUvdDelegate = SharedUVDGeneratorDelegate()
-    private var pressure: Float = 0.0
+    private var pressure: Double = 0.0
     private let jupiterPhaseController = JupiterPhaseController()
     private var inputReceivedForce: [ReceivedForce] = []
     private var inputUserVelocity: [UserVelocity] = []
@@ -136,6 +136,10 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
         uvdGenerator?.generateUvd()
         uvdGenerator?.delegate = self
         
+        rfdGenerator?.pressureProvider = { [weak self] in
+            return self?.pressure ?? 0.0
+        }
+        
         sharedUvdDelegate.addListener(jupiterPhaseController)
     }
     
@@ -152,7 +156,9 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
         let rfdURL = JupiterNetworkConstants.getRecRfdURL()
         inputReceivedForce.append(rfd)
         if inputReceivedForce.count >= sendRfdLength {
-            JupiterNetworkManager.shared.postReceivedForce(url: rfdURL, input: inputReceivedForce) { _, _, _ in }
+            JupiterNetworkManager.shared.postReceivedForce(url: rfdURL, input: inputReceivedForce) { [self] statusCode, returnedString, inputRfd in
+                print("(POST) RFD : statusCode = \(statusCode)")
+            }
             inputReceivedForce.removeAll()
         }
     }
@@ -161,7 +167,9 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
         let uvdURL = JupiterNetworkConstants.getRecUvdURL()
         inputUserVelocity.append(uvd)
         if inputUserVelocity.count >= sendUvdLength {
-            JupiterNetworkManager.shared.postUserVelocity(url: uvdURL, input: inputUserVelocity) { _, _, _ in }
+            JupiterNetworkManager.shared.postUserVelocity(url: uvdURL, input: inputUserVelocity) { [self] statusCode, returnedString, inputUvd in
+                print("(POST) UVD : statusCode = \(statusCode)")
+            }
             inputUserVelocity.removeAll()
         }
     }
@@ -174,7 +182,7 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
     }
     
     public func onPressureResult(_ generator: UVDGenerator, hPa: Double) {
-        pressure = Float(hPa)
+        pressure = hPa
     }
     public func onUvdResult(_ generator: UVDGenerator, userVelocity: UserVelocity) {
         sharedUvdDelegate.onUvdResult(generator, userVelocity: userVelocity)
