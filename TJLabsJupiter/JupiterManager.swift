@@ -145,7 +145,7 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
             return self?.pressure ?? 0.0
         }
         
-        sharedUvdDelegate.addListener(jupiterCalculator)
+        sharedUvdDelegate.addListener(jupiterCalculator!)
     }
     
     private func stopGenerator() {
