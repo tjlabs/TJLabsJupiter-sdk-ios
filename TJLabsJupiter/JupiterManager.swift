@@ -37,7 +37,6 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
 
     // MARK: - Start & Stop Jupiter Service
     public func startJupiter(sectorId: Int, region: JupiterRegion = .KOREA) {
-        jupiterCalculator = .init(userIdInput: self.id, sectorIdInput: sectorId)
         let (isNetworkAvailable, msgCheckNetworkAvailable) = JupiterNetworkManager.shared.isConnectedToInternet()
         let (isIdAvailable, msgCheckIdAvailable) = checkIdIsAvailable(id: id)
         
@@ -84,7 +83,8 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
         performTasksWithCounter(tasks: tasks, onComplete: {
             self.isStartService = true
             JupiterNetworkConstants.setServerURL(region: region)
-            self.startGenerator(id: id)
+            self.startGenerator(id: self.id)
+            self.jupiterCalculator = .init(id: self.id, sectorId: sectorId)
         }, onError: { msg in
             self.delegate?.onJupiterError(0, msg)
         })
