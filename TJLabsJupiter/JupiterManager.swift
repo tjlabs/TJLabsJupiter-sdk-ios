@@ -87,8 +87,8 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
         performTasksWithCounter(tasks: tasks, onComplete: {
             self.isStartService = true
             JupiterNetworkConstants.setServerURL(region: region)
-            self.startGenerator(id: self.id)
             self.jupiterCalculator = .init(id: self.id, sectorId: sectorId)
+            self.startGenerator(id: self.id)
             self.startTimer()
         }, onError: { msg in
             self.delegate?.onJupiterError(0, msg)
@@ -167,7 +167,7 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
         inputReceivedForce.append(rfd)
         if inputReceivedForce.count >= sendRfdLength {
             JupiterNetworkManager.shared.postReceivedForce(url: rfdURL, input: inputReceivedForce) { [self] statusCode, returnedString, inputRfd in
-                print("(POST) RFD : statusCode = \(statusCode)")
+//                print("(POST) RFD : statusCode = \(statusCode)")
             }
             inputReceivedForce.removeAll()
         }
@@ -178,7 +178,7 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
         inputUserVelocity.append(uvd)
         if inputUserVelocity.count >= sendUvdLength {
             JupiterNetworkManager.shared.postUserVelocity(url: uvdURL, input: inputUserVelocity) { [self] statusCode, returnedString, inputUvd in
-                print("(POST) UVD : statusCode = \(statusCode)")
+//                print("(POST) UVD : statusCode = \(statusCode)")
             }
             inputUserVelocity.removeAll()
         }
@@ -222,7 +222,9 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
     }
     
     func outputTimerUpdate() {
-        let jupiterResult = JupiterCalculator.getJupiterResult()
-        delegate?.onJupiterResult(jupiterResult)
+        if JupiterCalculator.isPossibleReturnJupiterResult() {
+            let jupiterResult = JupiterCalculator.getJupiterResult()
+            delegate?.onJupiterResult(jupiterResult)
+        }
     }
 }
