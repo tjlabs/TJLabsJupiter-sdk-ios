@@ -23,7 +23,7 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
     private var sendRfdLength = 2
     private var sendUvdLength = 4
     
-    init() {
+    public init() {
         self.deviceIdentifier = UIDevice.modelIdentifier
         self.deviceModel = UIDevice.modelName
         let deviceOs = UIDevice.current.systemVersion
@@ -32,7 +32,7 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
     }
     
     // MARK: - Start & Stop Jupiter Service
-    func startJupiter(id: String, region: JupiterRegion = .KOREA) {
+    public func startJupiter(id: String, region: JupiterRegion = .KOREA) {
         let (isNetworkAvailable, msgCheckNetworkAvailable) = JupiterNetworkManager.shared.isConnectedToInternet()
         let (isIdAvailable, msgCheckIdAvailable) = checkIdIsAvailable(id: id)
         
@@ -103,16 +103,16 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
     }
 
     
-    func stopJupiter() {
+    public func stopJupiter() {
         stopGenerator()
     }
     
     // MARK: - Set REC length
-    func setSendRfdLength(_ length: Int = 2) {
+    public func setSendRfdLength(_ length: Int = 2) {
         sendRfdLength = length
     }
     
-    func setSendUvdLength(_ length: Int = 4) {
+    public func setSendUvdLength(_ length: Int = 4) {
         sendUvdLength = length
     }
     
