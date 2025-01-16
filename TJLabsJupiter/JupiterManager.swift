@@ -6,6 +6,9 @@ import UIKit
 public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
     public static let sdkVersion: String = "0.0.1"
     
+    var id: String = ""
+    var sectorId: Int = 0
+    var region: JupiterRegion = .KOREA
     var deviceModel: String
     var deviceIdentifier: String
     var deviceOsVersion: Int
@@ -17,22 +20,23 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
     private let sharedRfdDelegate = SharedRFDGeneratorDelegate()
     private let sharedUvdDelegate = SharedUVDGeneratorDelegate()
     private var pressure: Double = 0.0
-    private let jupiterCalculator = JupiterCalculator()
+    private var jupiterCalculator: JupiterCalculator?
     private var inputReceivedForce: [ReceivedForce] = []
     private var inputUserVelocity: [UserVelocity] = []
     private var sendRfdLength = 2
     private var sendUvdLength = 4
     
-    public init() {
+    public init(id: String) {
+        self.id = id
         self.deviceIdentifier = UIDevice.modelIdentifier
         self.deviceModel = UIDevice.modelName
         let deviceOs = UIDevice.current.systemVersion
         let arr = deviceOs.components(separatedBy: ".")
         self.deviceOsVersion = Int(arr[0]) ?? 0
     }
-    
+
     // MARK: - Start & Stop Jupiter Service
-    public func startJupiter(id: String, region: JupiterRegion = .KOREA) {
+    public func startJupiter(sectorId: Int, region: JupiterRegion = .KOREA) {
         let (isNetworkAvailable, msgCheckNetworkAvailable) = JupiterNetworkManager.shared.isConnectedToInternet()
         let (isIdAvailable, msgCheckIdAvailable) = checkIdIsAvailable(id: id)
         
@@ -51,7 +55,7 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
             return
         }
         
-        let loginInput = LoginInput(user_id: id, device_model: self.deviceModel, os_version: self.deviceOsVersion, sdk_version: JupiterManager.sdkVersion)
+        let loginInput = LoginInput(user_id: self.id, device_model: self.deviceModel, os_version: self.deviceOsVersion, sdk_version: JupiterManager.sdkVersion)
         let tasks: [(DispatchGroup) -> Void] = [
             { group in
                 group.enter()
@@ -79,7 +83,8 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
         performTasksWithCounter(tasks: tasks, onComplete: {
             self.isStartService = true
             JupiterNetworkConstants.setServerURL(region: region)
-            self.startGenerator(id: id)
+            self.startGenerator(id: self.id)
+            self.jupiterCalculator = .init(id: self.id, sectorId: sectorId)
         }, onError: { msg in
             self.delegate?.onJupiterError(0, msg)
         })
@@ -119,7 +124,7 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
     // MARK: - ID Validation
     private func checkIdIsAvailable(id: String) -> (Bool, String) {
         if id.isEmpty || id.contains(" ") {
-            let msg = "(Olympus) Error: User ID (input = \(id)) cannot be empty or contain spaces."
+            let msg = TJLabsUtilFunctions.shared.getLocalTimeString() + " , (TJLabsJupiter) Error: User ID (input = \(id)) cannot be empty or contain spaces."
             return (false, msg)
         }
         return (true, "")
