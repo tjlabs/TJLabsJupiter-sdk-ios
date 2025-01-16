@@ -214,13 +214,15 @@ public struct UserVelocity : Swift.Encodable {
   public init(user_id: Swift.String, mobile_time: Swift.Int, index: Swift.Int, length: Swift.Double, heading: Swift.Double, looking: Swift.Bool)
   public func encode(to encoder: any Swift.Encoder) throws
 }
-public enum UserMode {
+public enum UserMode : Swift.Codable {
   case MODE_PEDESTRIAN, MODE_VEHICLE, MODE_AUTO
   public static func == (a: TJLabsCommon.UserMode, b: TJLabsCommon.UserMode) -> Swift.Bool
   public func hash(into hasher: inout Swift.Hasher)
+  public func encode(to encoder: any Swift.Encoder) throws
   public var hashValue: Swift.Int {
     get
   }
+  public init(from decoder: any Swift.Decoder) throws
 }
 public struct UnitDRInfo {
   public var time: Swift.Double
@@ -234,7 +236,7 @@ public struct UnitDRInfo {
   public init(time: Swift.Double, index: Swift.Int, length: Swift.Double, heading: Swift.Double, velocity: Swift.Double, lookingFlag: Swift.Bool, isIndexChanged: Swift.Bool, autoMode: Swift.Int)
 }
 public protocol UVDGeneratorDelegate : AnyObject {
-  func onUvdResult(_ generator: TJLabsCommon.UVDGenerator, userVelocity: TJLabsCommon.UserVelocity)
+  func onUvdResult(_ generator: TJLabsCommon.UVDGenerator, mode: TJLabsCommon.UserMode, userVelocity: TJLabsCommon.UserVelocity)
   func onPressureResult(_ generator: TJLabsCommon.UVDGenerator, hPa: Swift.Double)
   func onVelocityResult(_ generator: TJLabsCommon.UVDGenerator, kmPh: Swift.Double)
   func onUvdPauseMillis(_ generator: TJLabsCommon.UVDGenerator, time: Swift.Double)

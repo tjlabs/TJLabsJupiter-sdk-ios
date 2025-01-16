@@ -7,8 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		B30BF4C22D38DD2900429525 /* TJLabsCommon.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = B30BF4C12D38DD2900429525 /* TJLabsCommon.xcframework */; };
-		B30BF4C32D38DD2900429525 /* TJLabsCommon.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = B30BF4C12D38DD2900429525 /* TJLabsCommon.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		B30BF5632D38F9EC00429525 /* TJLabsCommon.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = B30BF5622D38F9EC00429525 /* TJLabsCommon.xcframework */; };
+		B30BF5642D38F9EC00429525 /* TJLabsCommon.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = B30BF5622D38F9EC00429525 /* TJLabsCommon.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		B3EA87582D36623D00372790 /* TJLabsJupiter.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B3EA874D2D36623C00372790 /* TJLabsJupiter.framework */; };
 /* End PBXBuildFile section */
 
@@ -29,7 +29,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				B30BF4C32D38DD2900429525 /* TJLabsCommon.xcframework in Embed Frameworks */,
+				B30BF5642D38F9EC00429525 /* TJLabsCommon.xcframework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -37,7 +37,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		B30BF4C12D38DD2900429525 /* TJLabsCommon.xcframework */ = {isa = PBXFileReference; expectedSignature = "AppleDeveloperProgram:G75UAV755N:TJLABS Corp."; lastKnownFileType = wrapper.xcframework; name = TJLabsCommon.xcframework; path = ../TJLabsCommon/xcframeworks/TJLabsCommon.xcframework; sourceTree = "<group>"; };
+		B30BF5622D38F9EC00429525 /* TJLabsCommon.xcframework */ = {isa = PBXFileReference; expectedSignature = "AppleDeveloperProgram:G75UAV755N:TJLABS Corp."; lastKnownFileType = wrapper.xcframework; name = TJLabsCommon.xcframework; path = ../TJLabsCommon/xcframeworks/TJLabsCommon.xcframework; sourceTree = "<group>"; };
 		B3EA874D2D36623C00372790 /* TJLabsJupiter.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = TJLabsJupiter.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		B3EA87572D36623D00372790 /* TJLabsJupiterTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TJLabsJupiterTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -73,7 +73,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				B30BF4C22D38DD2900429525 /* TJLabsCommon.xcframework in Frameworks */,
+				B30BF5632D38F9EC00429525 /* TJLabsCommon.xcframework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -110,7 +110,7 @@
 		B3EA87AB2D37481E00372790 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				B30BF4C12D38DD2900429525 /* TJLabsCommon.xcframework */,
+				B30BF5622D38F9EC00429525 /* TJLabsCommon.xcframework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
