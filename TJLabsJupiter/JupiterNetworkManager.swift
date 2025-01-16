@@ -9,12 +9,16 @@ class JupiterNetworkManager {
     
     private let rfdSessions: [URLSession]
     private let uvdSessions: [URLSession]
+    private let fltSessions: [URLSession]
+    
     private var rfdSessionCount = 0
     private var uvdSessionCount = 0
+    private var fltSessionCount = 0
 
     private init() {
         self.rfdSessions = JupiterNetworkManager.createSessionPool()
         self.uvdSessions = JupiterNetworkManager.createSessionPool()
+        self.fltSessions = JupiterNetworkManager.createSessionPool()
     }
     
     func isConnectedToInternet() -> (Bool, String) {
@@ -93,7 +97,7 @@ class JupiterNetworkManager {
             }
         }.resume()
     }
-
+    
     // MARK: - Public Methods
     func postUserLogin(url: String, input: LoginInput, completion: @escaping (Int, String) -> Void) {
         guard let body = encodeJson(input),
@@ -149,6 +153,19 @@ class JupiterNetworkManager {
 
         let session = uvdSessions[uvdSessionCount % uvdSessions.count]
         uvdSessionCount += 1
+        performRequest(request: request, session: session, input: input, completion: completion)
+    }
+    
+    func postFLT(url: String, input: FLT, completion: @escaping (Int, String, FLT) -> Void) {
+        let fltInput = input.fltInput
+        guard let body = encodeJson(fltInput),
+              let request = makeRequest(url: url, body: body) else {
+            DispatchQueue.main.async { completion(406, "Invalid URL or failed to encode JSON", input) }
+            return
+        }
+        
+        let session = fltSessions[fltSessionCount % fltSessions.count]
+        fltSessionCount += 1
         performRequest(request: request, session: session, input: input, completion: completion)
     }
 }
