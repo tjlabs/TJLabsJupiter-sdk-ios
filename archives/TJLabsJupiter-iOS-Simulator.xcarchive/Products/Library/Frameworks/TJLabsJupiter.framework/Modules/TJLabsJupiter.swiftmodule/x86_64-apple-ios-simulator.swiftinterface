@@ -1,0 +1,100 @@
+// swift-interface-format-version: 1.0
+// swift-compiler-version: Apple Swift version 6.0.2 effective-5.10 (swiftlang-6.0.2.1.2 clang-1600.0.26.4)
+// swift-module-flags: -target x86_64-apple-ios15.6-simulator -enable-objc-interop -enable-library-evolution -swift-version 5 -enforce-exclusivity=checked -O -enable-bare-slash-regex -module-name TJLabsJupiter
+import Foundation
+import Swift
+import SystemConfiguration
+import TJLabsCommon
+@_exported import TJLabsJupiter
+import UIKit
+import _Concurrency
+import _StringProcessing
+import _SwiftConcurrencyShims
+public class JupiterManager : TJLabsCommon.RFDGeneratorDelegate, TJLabsCommon.UVDGeneratorDelegate {
+  public static let sdkVersion: Swift.String
+  weak public var delegate: (any TJLabsJupiter.JupiterManagerDelegate)?
+  public init()
+  public func startJupiter(id: Swift.String, region: TJLabsJupiter.JupiterRegion = .KOREA)
+  public func stopJupiter()
+  public func setSendRfdLength(_ length: Swift.Int = 2)
+  public func setSendUvdLength(_ length: Swift.Int = 4)
+  public func onRfdError(_ generator: TJLabsCommon.RFDGenerator, code: Swift.Int, msg: Swift.String)
+  public func onRfdResult(_ generator: TJLabsCommon.RFDGenerator, receivedForce: TJLabsCommon.ReceivedForce)
+  public func onPressureResult(_ generator: TJLabsCommon.UVDGenerator, hPa: Swift.Double)
+  public func onUvdResult(_ generator: TJLabsCommon.UVDGenerator, userVelocity: TJLabsCommon.UserVelocity)
+  public func onUvdError(_ generator: TJLabsCommon.UVDGenerator, error: Swift.String)
+  public func onUvdPauseMillis(_ generator: TJLabsCommon.UVDGenerator, time: Swift.Double)
+  public func onVelocityResult(_ generator: TJLabsCommon.UVDGenerator, kmPh: Swift.Double)
+  @objc deinit
+}
+public struct LoginInput : Swift.Codable {
+  public var user_id: Swift.String
+  public var device_model: Swift.String
+  public var os_version: Swift.Int
+  public var sdk_version: Swift.String
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public enum JupiterRegion {
+  case KOREA, US, CANADA
+  public static func == (a: TJLabsJupiter.JupiterRegion, b: TJLabsJupiter.JupiterRegion) -> Swift.Bool
+  public func hash(into hasher: inout Swift.Hasher)
+  public var hashValue: Swift.Int {
+    get
+  }
+}
+public struct FineLocationTrackingResult : Swift.Codable {
+  public var mobile_time: Swift.Int
+  public var building_name: Swift.String
+  public var level_name: Swift.String
+  public var scc: Swift.Double
+  public var x: Swift.Double
+  public var y: Swift.Double
+  public var absolute_heading: Swift.Double
+  public var phase: Swift.Int
+  public var calculated_time: Swift.Double
+  public var index: Swift.Int
+  public var velocity: Swift.Double
+  public var mode: Swift.String
+  public var ble_only_position: Swift.Bool
+  public var isIndoor: Swift.Bool
+  public var validity: Swift.Bool
+  public var validity_flag: Swift.Int
+  public init()
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public protocol JupiterManagerDelegate : AnyObject {
+  func onJupiterResult(_ result: TJLabsJupiter.FineLocationTrackingResult)
+  func onJupiterError(_ code: Swift.Int, _ msg: Swift.String)
+}
+@_hasMissingDesignatedInitializers public class JupiterNetworkConstants {
+  public static func setServerURL(region: TJLabsJupiter.JupiterRegion)
+  public static func getUserVersion() -> Swift.String
+  public static func getUserBaseURL() -> Swift.String
+  public static func getRecBaseURL() -> Swift.String
+  public static func getRecServerVersion() -> Swift.String
+  public static func getUserLoginURL() -> Swift.String
+  public static func getRecRfdURL() -> Swift.String
+  public static func getRecUvdURL() -> Swift.String
+  @objc deinit
+}
+@_hasMissingDesignatedInitializers public class SharedRFDGeneratorDelegate : TJLabsCommon.RFDGeneratorDelegate {
+  public var listeners: [any TJLabsCommon.RFDGeneratorDelegate]
+  public func addListener(_ listener: any TJLabsCommon.RFDGeneratorDelegate)
+  public func onRfdResult(_ generator: TJLabsCommon.RFDGenerator, receivedForce: TJLabsCommon.ReceivedForce)
+  public func onRfdError(_ generator: TJLabsCommon.RFDGenerator, code: Swift.Int, msg: Swift.String)
+  @objc deinit
+}
+@_hasMissingDesignatedInitializers public class SharedUVDGeneratorDelegate : TJLabsCommon.UVDGeneratorDelegate {
+  public var listeners: [any TJLabsCommon.UVDGeneratorDelegate]
+  public func addListener(_ listener: any TJLabsCommon.UVDGeneratorDelegate)
+  public func onUvdResult(_ generator: TJLabsCommon.UVDGenerator, userVelocity: TJLabsCommon.UserVelocity)
+  public func onPressureResult(_ generator: TJLabsCommon.UVDGenerator, hPa: Swift.Double)
+  public func onVelocityResult(_ generator: TJLabsCommon.UVDGenerator, kmPh: Swift.Double)
+  public func onUvdPauseMillis(_ generator: TJLabsCommon.UVDGenerator, time: Swift.Double)
+  public func onUvdError(_ generator: TJLabsCommon.UVDGenerator, error: Swift.String)
+  @objc deinit
+}
+extension TJLabsJupiter.JupiterRegion : Swift.Equatable {}
+extension TJLabsJupiter.JupiterRegion : Swift.Hashable {}
