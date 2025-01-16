@@ -17,7 +17,7 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
     private let sharedRfdDelegate = SharedRFDGeneratorDelegate()
     private let sharedUvdDelegate = SharedUVDGeneratorDelegate()
     private var pressure: Double = 0.0
-    private let jupiterPhaseController = JupiterPhaseController()
+    private let jupiterCalculator = JupiterCalculator()
     private var inputReceivedForce: [ReceivedForce] = []
     private var inputUserVelocity: [UserVelocity] = []
     private var sendRfdLength = 2
@@ -140,7 +140,7 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
             return self?.pressure ?? 0.0
         }
         
-        sharedUvdDelegate.addListener(jupiterPhaseController)
+        sharedUvdDelegate.addListener(jupiterCalculator)
     }
     
     private func stopGenerator() {

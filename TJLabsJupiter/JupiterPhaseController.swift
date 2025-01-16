@@ -2,7 +2,7 @@
 import Foundation
 import TJLabsCommon
 
-class JupiterPhaseController: UVDGeneratorDelegate {
+class JupiterCalculator: UVDGeneratorDelegate {
     
     private static var phase = 1
         
