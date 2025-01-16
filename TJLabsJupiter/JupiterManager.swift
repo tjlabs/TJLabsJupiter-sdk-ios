@@ -14,8 +14,8 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
     private var rfdGenerator: RFDGenerator?
     private var uvdGenerator: UVDGenerator?
     private var isStartService = false
-    private let sharedRfdCallback = SharedRFDGeneratorDelegate()
-    private let sharedUvdCallback = SharedUVDGeneratorDelegate()
+    private let sharedRfdDelegate = SharedRFDGeneratorDelegate()
+    private let sharedUvdDelegate = SharedUVDGeneratorDelegate()
     private var pressure: Float = 0.0
     private let jupiterPhaseController = JupiterPhaseController()
     private var inputReceivedForce: [ReceivedForce] = []
@@ -136,7 +136,7 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
         uvdGenerator?.generateUvd()
         uvdGenerator?.delegate = self
         
-        sharedUvdCallback.addListener(jupiterPhaseController)
+        sharedUvdDelegate.addListener(jupiterPhaseController)
     }
     
     private func stopGenerator() {
@@ -170,14 +170,14 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
     public func onRfdError(_ generator: RFDGenerator, code: Int, msg: String) {}
     public func onRfdResult(_ generator: RFDGenerator, receivedForce: ReceivedForce) {
         sendRfd(rfd: receivedForce)
-        sharedRfdCallback.onRfdResult(generator, receivedForce: receivedForce)
+        sharedRfdDelegate.onRfdResult(generator, receivedForce: receivedForce)
     }
     
     public func onPressureResult(_ generator: UVDGenerator, hPa: Double) {
         pressure = Float(hPa)
     }
     public func onUvdResult(_ generator: UVDGenerator, userVelocity: UserVelocity) {
-        sharedUvdCallback.onUvdResult(generator, userVelocity: userVelocity)
+        sharedUvdDelegate.onUvdResult(generator, userVelocity: userVelocity)
         sendUvd(uvd: userVelocity)
     }
     public func onUvdError(_ generator: UVDGenerator, error: String) {}
