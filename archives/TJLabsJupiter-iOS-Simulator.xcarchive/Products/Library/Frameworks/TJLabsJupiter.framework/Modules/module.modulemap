@@ -1,6 +1,0 @@
-framework module TJLabsJupiter {
-  umbrella header "TJLabsJupiter.h"
-  export *
-
-  module * { export * }
-}
