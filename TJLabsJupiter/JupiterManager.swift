@@ -26,6 +26,10 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
     private var sendRfdLength = 2
     private var sendUvdLength = 4
     
+    // MARK: - JupiterResult Timer
+    var outputTimer: DispatchSourceTimer?
+    let timerInterval: TimeInterval = 1/5
+    
     public init(id: String) {
         self.id = id
         self.deviceIdentifier = UIDevice.modelIdentifier
@@ -85,6 +89,7 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
             JupiterNetworkConstants.setServerURL(region: region)
             self.startGenerator(id: self.id)
             self.jupiterCalculator = .init(id: self.id, sectorId: sectorId)
+            self.startTimer()
         }, onError: { msg in
             self.delegate?.onJupiterError(0, msg)
         })
@@ -107,8 +112,8 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
         }
     }
 
-    
     public func stopJupiter() {
+        stopTimer()
         stopGenerator()
     }
     
@@ -196,4 +201,28 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
     public func onUvdError(_ generator: UVDGenerator, error: String) {}
     public func onUvdPauseMillis(_ generator: UVDGenerator, time: Double) {}
     public func onVelocityResult(_ generator: UVDGenerator, kmPh: Double) {}
+    
+    // MARK: - JupiterResult Timer
+    func startTimer() {
+        if (self.outputTimer == nil) {
+            let queue = DispatchQueue(label: Bundle.main.bundleIdentifier! + ".outputTimer")
+            self.outputTimer = DispatchSource.makeTimerSource(queue: queue)
+            self.outputTimer!.schedule(deadline: .now(), repeating: timerInterval)
+            self.outputTimer!.setEventHandler { [weak self] in
+                guard let self = self else { return }
+                self.outputTimerUpdate()
+            }
+            self.outputTimer!.resume()
+        }
+    }
+    
+    func stopTimer() {
+        self.outputTimer?.cancel()
+        self.outputTimer = nil
+    }
+    
+    func outputTimerUpdate() {
+        let jupiterResult = JupiterCalculator.getJupiterResult()
+        delegate?.onJupiterResult(jupiterResult)
+    }
 }
