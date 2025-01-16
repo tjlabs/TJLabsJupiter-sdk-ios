@@ -75,9 +75,9 @@ class JupiterCalculator: UVDGeneratorDelegate {
     private var preServerResultMobileTime: Int = 0
 
     // MARK: - Initialization
-    init(userIdInput: String, sectorIdInput: Int) {
-        JupiterCalculator.id = userIdInput
-        JupiterCalculator.sectorId = sectorIdInput
+    init(id: String, sectorId: Int) {
+        JupiterCalculator.id = id
+        JupiterCalculator.sectorId = sectorId
     }
 
     // MARK: - Calculation Methods
