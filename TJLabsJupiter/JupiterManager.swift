@@ -40,7 +40,7 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
     }
 
     // MARK: - Start & Stop Jupiter Service
-    public func startJupiter(sectorId: Int, region: JupiterRegion = .KOREA) {
+    public func startJupiter(region: JupiterRegion = .KOREA, sectorId: Int) {
         let (isNetworkAvailable, msgCheckNetworkAvailable) = JupiterNetworkManager.shared.isConnectedToInternet()
         let (isIdAvailable, msgCheckIdAvailable) = checkIdIsAvailable(id: id)
         
