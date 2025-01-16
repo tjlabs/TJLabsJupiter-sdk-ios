@@ -117,6 +117,11 @@ public struct FineLocationTrackingOutput: Codable {
     }
 }
 
+public struct FineLocationTrackingOutputList: Codable {
+    public var flt_outputs: [FineLocationTrackingOutput]
+}
+
+
 struct FLT {
     var fltInput: FineLocationTrackingInput
     var trajInfoList: [TrajectoryInfo]
