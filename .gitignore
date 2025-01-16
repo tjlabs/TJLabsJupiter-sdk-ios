@@ -34,3 +34,9 @@ Carthage/Build
 # `pod install` in .travis.yml
 #
 # Pods/
+
+# Ignore all files in the archive folder
+archive/
+
+# Ignore all files in the xcframeworks folder
+xcframeworks/
