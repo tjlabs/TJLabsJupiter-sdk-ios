@@ -29,8 +29,8 @@ public class SharedUVDGeneratorDelegate: UVDGeneratorDelegate {
     }
 
     // UVDGeneratorDelegate methods
-    public func onUvdResult(_ generator: UVDGenerator, userVelocity: UserVelocity) {
-        listeners.forEach { $0.onUvdResult(generator, userVelocity: userVelocity) }
+    public func onUvdResult(_ generator: UVDGenerator, mode: UserMode, userVelocity: UserVelocity) {
+        listeners.forEach { $0.onUvdResult(generator, mode: mode, userVelocity: userVelocity) }
     }
 
     public func onPressureResult(_ generator: UVDGenerator, hPa: Double) {

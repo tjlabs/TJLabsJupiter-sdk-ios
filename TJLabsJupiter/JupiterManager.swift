@@ -189,8 +189,8 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
     public func onPressureResult(_ generator: UVDGenerator, hPa: Double) {
         pressure = hPa
     }
-    public func onUvdResult(_ generator: UVDGenerator, userVelocity: UserVelocity) {
-        sharedUvdDelegate.onUvdResult(generator, userVelocity: userVelocity)
+    public func onUvdResult(_ generator: UVDGenerator, mode: UserMode, userVelocity: UserVelocity) {
+        sharedUvdDelegate.onUvdResult(generator, mode: mode, userVelocity: userVelocity)
         sendUvd(uvd: userVelocity)
     }
     public func onUvdError(_ generator: UVDGenerator, error: String) {}
