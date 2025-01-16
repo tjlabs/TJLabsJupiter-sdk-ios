@@ -4,8 +4,12 @@ import Foundation
 let TIMEOUT_VALUE_PUT: TimeInterval = 5.0
 
 public class JupiterNetworkConstants {
-    static let USER_SERVER_VERSION = "2024-06-12"
-    static let REC_SERVER_VERSION = "2024-04-19"
+    static let USER_LOGIN_SERVER_VERSION = "2024-06-12"
+    
+    static let REC_RFD_SERVER_VERSION = "2024-04-19"
+    static let REC_UVD_SERVER_VERSION = "2024-04-19"
+
+    static let CALC_FLT_SERVER_VERSION = "2024-12-12"
     
     private static let HTTP_PREFIX = "https://"
     private static let JUPITER_SUFFIX = ".jupiter.tjlabs.dev"
@@ -41,10 +45,6 @@ public class JupiterNetworkConstants {
         CLIENT_URL = HTTP_PREFIX + REGION_PREFIX + "client" + JUPITER_SUFFIX
     }
     
-    public static func getUserVersion() -> String {
-        return USER_SERVER_VERSION
-    }
-    
     public static func getUserBaseURL() -> String {
         return USER_URL
     }
@@ -53,19 +53,35 @@ public class JupiterNetworkConstants {
         return REC_URL
     }
     
-    public static func getRecServerVersion() -> String {
-        return REC_SERVER_VERSION
+    public static func getCalcBaseURL() -> String {
+        return CALC_URL
+    }
+    
+    public static func getUserLoginVersion() -> String {
+        return USER_LOGIN_SERVER_VERSION
+    }
+    
+    public static func getRecRfdServerVersion() -> String {
+        return REC_RFD_SERVER_VERSION
+    }
+    
+    public static func getRecUvdServerVersion() -> String {
+        return REC_UVD_SERVER_VERSION
     }
     
     public static func getUserLoginURL() -> String {
-        return USER_URL + "/" + USER_SERVER_VERSION + "/user"
+        return USER_URL + "/" + USER_LOGIN_SERVER_VERSION + "/user"
     }
     
     public static func getRecRfdURL() -> String {
-        return REC_URL + "/" + REC_SERVER_VERSION + "/rf"
+        return REC_URL + "/" + REC_RFD_SERVER_VERSION + "/rf"
     }
     
     public static func getRecUvdURL() -> String {
-        return REC_URL + "/" + REC_SERVER_VERSION + "/uv"
+        return REC_URL + "/" + REC_UVD_SERVER_VERSION + "/uv"
+    }
+    
+    public static func getCalcFltURL() -> String {
+        return CALC_URL + "/" + CALC_FLT_SERVER_VERSION + "/flt"
     }
 }
