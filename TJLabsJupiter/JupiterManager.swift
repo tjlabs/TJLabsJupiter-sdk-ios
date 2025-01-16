@@ -10,7 +10,7 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
     var deviceIdentifier: String
     var deviceOsVersion: Int
     
-    private weak var delegate: JupiterManagerDelegate?
+    public weak var delegate: JupiterManagerDelegate?
     private var rfdGenerator: RFDGenerator?
     private var uvdGenerator: UVDGenerator?
     private var isStartService = false

@@ -51,7 +51,7 @@ public struct FineLocationTrackingResult: Codable {
     }
 }
 
-protocol JupiterManagerDelegate: AnyObject {
+public protocol JupiterManagerDelegate: AnyObject {
     func onJupiterResult(_ result: FineLocationTrackingResult)
     func onJupiterError(_ code: Int, _ msg: String)
 }
