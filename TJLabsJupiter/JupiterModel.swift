@@ -33,30 +33,10 @@ public struct TrajectoryInfo {
     public var userTuHeading: Double = 0
 }
 
-public enum TrajType {
-    case DR_UNKNOWN,
-         DR_IN_PHASE3,
-         DR_ALL_STRAIGHT,
-         DR_HEAD_STRAIGHT,
-         DR_TAIL_STRAIGHT,
-         DR_RQ_IN_PHASE2,
-         DR_NO_RQ_IN_PHASE2,
-         PDR_IN_PHASE3_HAS_MAJOR_DIR,
-         PDR_IN_PHASE3_NO_MAJOR_DIR,
-         PDR_IN_PHASE4_HAS_MAJOR_DIR,
-         PDR_IN_PHASE4_NO_MAJOR_DIR,
-         PDR_IN_PHASE4_ABNORMAL
-}
-
 public struct SearchInfo {
     public var searchRange: [Int] = []
-    public var searchArea: [[Double]] = [[0, 0]]
     public var searchDirection: [Int] = [0, 90, 180, 270]
     public var tailIndex: Int = 1
-    public var trajShape: [[Double]] = [[0, 0]]
-    public var trajStartCoord: [Double] = [0, 0]
-    public var trajType: TrajType = TrajType.DR_UNKNOWN
-    public var trajLength: Double = 0
 }
 
 public struct FineLocationTrackingInput: Encodable {
