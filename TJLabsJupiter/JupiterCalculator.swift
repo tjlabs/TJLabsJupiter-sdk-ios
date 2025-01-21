@@ -14,16 +14,31 @@ class JupiterCalculator: UVDGeneratorDelegate {
     static var y: Double = 0.0
     static var absoluteHeading: Double = 0.0
     static var phase: Int = 1
+    static var isPhaseBreak: Bool = false
+    static var phaseBreakFineLocationTrackingResult = FineLocationTrackingOutput()
+    
     static var calTime: Double = 0.0
     static var currentUvd = UserVelocity(user_id: "", mobile_time: 0, index: 0, length: 0, heading: 0, looking: false)
+    static var searchRange = [Int]()
+    static var searchDirectionList = [Int]()
     static var bleOnlyPosition: Bool = false
     static var isIndoor: Bool = false
     static var validity: Bool = false
     static var validityFlag: Int = 0
     static var currentVelocity: Double = 0.0
     static var currentUserMode: UserMode = .MODE_PEDESTRIAN
+    static var tailIndex: Int = 0
     
     // MARK: - Static Methods
+    static func getPhaseBreak() -> Bool {
+        if isPhaseBreak {
+            isPhaseBreak = false
+            return true
+        } else {
+            return false
+        }
+    }
+    
     static func getJupiterResult() -> JupiterResult {
         return JupiterResult(
             mobile_time: TJLabsUtilFunctions.shared.getCurrentTimeInMilliseconds(),
@@ -54,12 +69,12 @@ class JupiterCalculator: UVDGeneratorDelegate {
             building_name: buildingName,
             level_name_list: [levelName],
             phase: phase,
-            search_range: [0],
-            search_direction_list: [0],
+            search_range: searchRange,
+            search_direction_list: searchDirectionList,
             normalization_scale: 1.0,
             device_min_rss: -99,
             sc_compensation_list: [1.0],
-            tail_index: 0,
+            tail_index: tailIndex,
             head_section_number: 0,
             node_number_list: [],
             node_index: 0,
@@ -73,6 +88,7 @@ class JupiterCalculator: UVDGeneratorDelegate {
     // MARK: - Properties
     private let phase3BreakScc: Double = 0.62
     private var preServerResultMobileTime: Int = 0
+    private var prePhase: Int = 1
 
     // MARK: - Initialization
     init(id: String, sectorId: Int) {
@@ -89,7 +105,7 @@ class JupiterCalculator: UVDGeneratorDelegate {
             // TODO: Implement Phase 2
             break
         case 3:
-            // TODO: Implement Phase 3
+            calculatePhase3()
             break
         case 5:
             // TODO: Implement Phase 5
@@ -100,10 +116,15 @@ class JupiterCalculator: UVDGeneratorDelegate {
         default:
             break
         }
+        
+        if JupiterCalculator.phase < 2 && self.prePhase >= 2 {
+            JupiterCalculator.isPhaseBreak = true
+        }
+        self.prePhase = JupiterCalculator.phase
     }
 
     private func calculatePhase1() {
-        if JupiterCalculator.currentUvd.index % JupiterCalculator.fltRequestIndex == 0 {
+        if (JupiterCalculator.currentUvd.index % JupiterCalculator.fltRequestIndex) == 0 {
             let phase1Input = JupiterCalculator.getLatestFineLocationTrackingInput()
             let fltInput = FLT(fltInput: phase1Input, trajInfoList: [], searchInfo: SearchInfo())
             JupiterNetworkManager.shared.postFLT(url: JupiterNetworkConstants.getCalcFltURL(), input: fltInput, completion: { [self] statusCode, returnedString, input in
@@ -111,7 +132,7 @@ class JupiterCalculator: UVDGeneratorDelegate {
                     let decodedResult = decodeFineLocationTrackingOutputList(jsonString: returnedString)
                     let result = decodedResult.1.flt_outputs
                     let fltResult = result.isEmpty ? FineLocationTrackingOutput() : result[0]
-                    if decodedResult.0 && fltResult.x != 0 || fltResult.y != 0 {
+                    if decodedResult.0 && fltResult.x != 0 || fltResult.y != 0 && fltResult.mobile_time >= self.preServerResultMobileTime {
                         JupiterCalculator.buildingName = fltResult.building_name
                         JupiterCalculator.levelName = fltResult.level_name
                         JupiterCalculator.scc = fltResult.scc
@@ -119,7 +140,36 @@ class JupiterCalculator: UVDGeneratorDelegate {
                         JupiterCalculator.y = fltResult.y
                         JupiterCalculator.absoluteHeading = fltResult.absolute_heading
                         JupiterCalculator.calTime = fltResult.calculated_time
-                        
+                        JupiterCalculator.phase = fltResult.scc >= phase3BreakScc ? 3 : 1
+                        JupiterCalculator.phaseBreakFineLocationTrackingResult = fltResult
+                        preServerResultMobileTime = fltResult.mobile_time
+                    }
+                }
+            })
+        }
+    }
+    
+    private func calculatePhase3() {
+        if (JupiterCalculator.currentUvd.index % JupiterCalculator.fltRequestIndex) == 0 {
+            let phase3Input = JupiterCalculator.getLatestFineLocationTrackingInput()
+            let fltInput = FLT(fltInput: phase3Input, trajInfoList: [], searchInfo: SearchInfo())
+            JupiterNetworkManager.shared.postFLT(url: JupiterNetworkConstants.getCalcFltURL(), input: fltInput, completion: { [self] statusCode, returnedString, input in
+                if statusCode == 200 {
+                    let decodedResult = decodeFineLocationTrackingOutputList(jsonString: returnedString)
+                    let result = decodedResult.1.flt_outputs
+                    let fltResult = result.isEmpty ? FineLocationTrackingOutput() : result[0]
+                    if decodedResult.0 && fltResult.x != 0 || fltResult.y != 0 && fltResult.mobile_time >= self.preServerResultMobileTime {
+                        JupiterCalculator.buildingName = fltResult.building_name
+                        JupiterCalculator.levelName = fltResult.level_name
+                        JupiterCalculator.scc = fltResult.scc
+                        JupiterCalculator.x = fltResult.x
+                        JupiterCalculator.y = fltResult.y
+                        JupiterCalculator.absoluteHeading = fltResult.absolute_heading
+                        JupiterCalculator.calTime = fltResult.calculated_time
+                        if fltResult.scc < 0.45 {
+                            JupiterCalculator.phase = 1
+                        }
+                        JupiterCalculator.phaseBreakFineLocationTrackingResult = fltResult
                         preServerResultMobileTime = fltResult.mobile_time
                     }
                 }
