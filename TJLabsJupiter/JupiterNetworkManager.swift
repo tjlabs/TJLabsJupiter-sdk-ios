@@ -37,8 +37,8 @@ class JupiterNetworkManager {
     // MARK: - Helper Methods
     private static func createSessionPool() -> [URLSession] {
         let config = URLSessionConfiguration.default
-        config.timeoutIntervalForResource = TIMEOUT_VALUE_PUT
-        config.timeoutIntervalForRequest = TIMEOUT_VALUE_PUT
+        config.timeoutIntervalForResource = JupiterNetworkConstants.TIMEOUT_VALUE_PUT
+        config.timeoutIntervalForRequest = JupiterNetworkConstants.TIMEOUT_VALUE_PUT
         return (1...3).map { _ in URLSession(configuration: config) }
     }
 

@@ -1,9 +1,9 @@
 
 import Foundation
 
-let TIMEOUT_VALUE_PUT: TimeInterval = 5.0
-
 public class JupiterNetworkConstants {
+    static let TIMEOUT_VALUE_PUT: TimeInterval = 5.0
+    
     static let USER_LOGIN_SERVER_VERSION = "2024-06-12"
     
     static let REC_RFD_SERVER_VERSION = "2024-04-19"
