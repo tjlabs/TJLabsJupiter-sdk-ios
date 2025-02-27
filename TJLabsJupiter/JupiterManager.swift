@@ -27,8 +27,8 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
     private var sendUvdLength = 4
     
     // MARK: - JupiterResult Timer
+    var osrTimer: DispatchSourceTimer?
     var outputTimer: DispatchSourceTimer?
-    let timerInterval: TimeInterval = 1/5
     
     public init(id: String) {
         self.id = id
@@ -90,6 +90,7 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
             self.jupiterCalculator = .init(id: self.id, sectorId: sectorId)
             self.startGenerator(id: self.id)
             self.startTimer()
+            self.delegate?.onJupiterSuccess(true)
         }, onError: { msg in
             self.delegate?.onJupiterError(0, msg)
         })
@@ -202,12 +203,23 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
     public func onUvdPauseMillis(_ generator: UVDGenerator, time: Double) {}
     public func onVelocityResult(_ generator: UVDGenerator, kmPh: Double) {}
     
-    // MARK: - JupiterResult Timer
+    // MARK: - Jupiter Timer
     func startTimer() {
+        if (self.osrTimer == nil) {
+            let queue = DispatchQueue(label: Bundle.main.bundleIdentifier! + ".osrTimer")
+            self.osrTimer = DispatchSource.makeTimerSource(queue: queue)
+            self.osrTimer!.schedule(deadline: .now(), repeating: JupiterConstants.OSR_INTERVAL)
+            self.osrTimer!.setEventHandler { [weak self] in
+                guard let self = self else { return }
+                self.osrTimerUpdate()
+            }
+            self.osrTimer!.resume()
+        }
+        
         if (self.outputTimer == nil) {
             let queue = DispatchQueue(label: Bundle.main.bundleIdentifier! + ".outputTimer")
             self.outputTimer = DispatchSource.makeTimerSource(queue: queue)
-            self.outputTimer!.schedule(deadline: .now(), repeating: timerInterval)
+            self.outputTimer!.schedule(deadline: .now(), repeating: JupiterConstants.OUTPUT_INTEVAL)
             self.outputTimer!.setEventHandler { [weak self] in
                 guard let self = self else { return }
                 self.outputTimerUpdate()
@@ -217,8 +229,15 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
     }
     
     func stopTimer() {
+        self.osrTimer?.cancel()
+        self.osrTimer = nil
+        
         self.outputTimer?.cancel()
         self.outputTimer = nil
+    }
+    
+    func osrTimerUpdate() {
+        
     }
     
     func outputTimerUpdate() {

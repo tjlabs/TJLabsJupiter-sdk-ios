@@ -144,6 +144,7 @@ public struct JupiterResult: Codable {
 }
 
 public protocol JupiterManagerDelegate: AnyObject {
-    func onJupiterResult(_ result: JupiterResult)
+    func onJupiterSuccess(_ isSuccess: Bool)
     func onJupiterError(_ code: Int, _ msg: String)
+    func onJupiterResult(_ result: JupiterResult)
 }
