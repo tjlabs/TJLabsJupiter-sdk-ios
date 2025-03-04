@@ -10,15 +10,18 @@ class JupiterNetworkManager {
     private let rfdSessions: [URLSession]
     private let uvdSessions: [URLSession]
     private let fltSessions: [URLSession]
+    private let osrSessions: [URLSession]
     
     private var rfdSessionCount = 0
     private var uvdSessionCount = 0
     private var fltSessionCount = 0
+    private var osrSessionCount = 0
 
     private init() {
         self.rfdSessions = JupiterNetworkManager.createSessionPool()
         self.uvdSessions = JupiterNetworkManager.createSessionPool()
         self.fltSessions = JupiterNetworkManager.createSessionPool()
+        self.osrSessions = JupiterNetworkManager.createSessionPool()
     }
     
     func isConnectedToInternet() -> (Bool, String) {
@@ -166,6 +169,19 @@ class JupiterNetworkManager {
         
         let session = fltSessions[fltSessionCount % fltSessions.count]
         fltSessionCount += 1
+        performRequest(request: request, session: session, input: input, completion: completion)
+    }
+    
+    func postOSR(url: String, input: OnSpotRecognitionInput, completion: @escaping (Int, String, OnSpotRecognitionInput) -> Void) {
+        let osrInput: OnSpotRecognitionInput = input
+        guard let body = encodeJson(osrInput),
+                let request = makeRequest(url: url, body: body) else {
+            DispatchQueue.main.async { completion(406, "Invalid URL or failed to encode JSON", input) }
+            return
+        }
+            
+        let session = osrSessions[osrSessionCount % osrSessions.count]
+        osrSessionCount += 1
         performRequest(request: request, session: session, input: input, completion: completion)
     }
 }
