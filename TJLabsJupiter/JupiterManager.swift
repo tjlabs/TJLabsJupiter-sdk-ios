@@ -27,8 +27,8 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
     private var sendUvdLength = 4
     
     // MARK: - JupiterResult Timer
+    var osrTimer: DispatchSourceTimer?
     var outputTimer: DispatchSourceTimer?
-    let timerInterval: TimeInterval = 1/5
     
     public init(id: String) {
         self.id = id
@@ -46,16 +46,19 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
         
         if !isNetworkAvailable {
             delegate?.onJupiterError(0, msgCheckNetworkAvailable)
+            delegate?.onJupiterSuccess(false)
             return
         }
         
         if !isIdAvailable {
             delegate?.onJupiterError(0, msgCheckIdAvailable)
+            delegate?.onJupiterSuccess(false)
             return
         }
         
         if isStartService {
             delegate?.onJupiterError(0, "The service is already starting.")
+            delegate?.onJupiterSuccess(false)
             return
         }
         
@@ -90,8 +93,10 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
             self.jupiterCalculator = .init(id: self.id, sectorId: sectorId)
             self.startGenerator(id: self.id)
             self.startTimer()
+            self.delegate?.onJupiterSuccess(true)
         }, onError: { msg in
             self.delegate?.onJupiterError(0, msg)
+            self.delegate?.onJupiterSuccess(false)
         })
     }
 
@@ -185,7 +190,10 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
     }
     
     // MARK: - Delegates
-    public func onRfdError(_ generator: RFDGenerator, code: Int, msg: String) {}
+    public func onRfdError(_ generator: RFDGenerator, code: Int, msg: String) {
+        sharedRfdDelegate.onRfdError(generator, code: code, msg: msg)
+    }
+    
     public func onRfdResult(_ generator: RFDGenerator, receivedForce: ReceivedForce) {
         sendRfd(rfd: receivedForce)
         sharedRfdDelegate.onRfdResult(generator, receivedForce: receivedForce)
@@ -198,16 +206,34 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
         sharedUvdDelegate.onUvdResult(generator, mode: mode, userVelocity: userVelocity)
         sendUvd(uvd: userVelocity)
     }
-    public func onUvdError(_ generator: UVDGenerator, error: String) {}
-    public func onUvdPauseMillis(_ generator: UVDGenerator, time: Double) {}
-    public func onVelocityResult(_ generator: UVDGenerator, kmPh: Double) {}
+    public func onUvdError(_ generator: UVDGenerator, error: String) {
+        sharedUvdDelegate.onUvdError(generator, error: error)
+    }
     
-    // MARK: - JupiterResult Timer
+    public func onUvdPauseMillis(_ generator: UVDGenerator, time: Double) {
+        sharedUvdDelegate.onUvdPauseMillis(generator, time: time)
+    }
+    public func onVelocityResult(_ generator: UVDGenerator, kmPh: Double) {
+        sharedUvdDelegate.onVelocityResult(generator, kmPh: kmPh)
+    }
+    
+    // MARK: - Jupiter Timer
     func startTimer() {
+        if (self.osrTimer == nil) {
+            let queue = DispatchQueue(label: Bundle.main.bundleIdentifier! + ".osrTimer")
+            self.osrTimer = DispatchSource.makeTimerSource(queue: queue)
+            self.osrTimer!.schedule(deadline: .now(), repeating: JupiterConstants.OSR_INTERVAL)
+            self.osrTimer!.setEventHandler { [weak self] in
+                guard let self = self else { return }
+                self.osrTimerUpdate()
+            }
+            self.osrTimer!.resume()
+        }
+        
         if (self.outputTimer == nil) {
             let queue = DispatchQueue(label: Bundle.main.bundleIdentifier! + ".outputTimer")
             self.outputTimer = DispatchSource.makeTimerSource(queue: queue)
-            self.outputTimer!.schedule(deadline: .now(), repeating: timerInterval)
+            self.outputTimer!.schedule(deadline: .now(), repeating: JupiterConstants.OUTPUT_INTEVAL)
             self.outputTimer!.setEventHandler { [weak self] in
                 guard let self = self else { return }
                 self.outputTimerUpdate()
@@ -217,8 +243,15 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
     }
     
     func stopTimer() {
+        self.osrTimer?.cancel()
+        self.osrTimer = nil
+        
         self.outputTimer?.cancel()
         self.outputTimer = nil
+    }
+    
+    func osrTimerUpdate() {
+        
     }
     
     func outputTimerUpdate() {
