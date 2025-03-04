@@ -58,6 +58,10 @@ public class JupiterNetworkConstants {
         return CALC_URL
     }
     
+    public static func getClientBaseURL() -> String {
+        return CLIENT_URL
+    }
+    
     public static func getUserLoginVersion() -> String {
         return USER_LOGIN_SERVER_VERSION
     }
@@ -88,5 +92,9 @@ public class JupiterNetworkConstants {
     
     public static func getCalcOsrURL() -> String {
         return CALC_URL + "/" + CALC_OSR_SERVER_VERSION + "/osr"
+    }
+    
+    public static func getClientBlacklistURL() -> String {
+        return CLIENT_URL + "/black"
     }
 }
