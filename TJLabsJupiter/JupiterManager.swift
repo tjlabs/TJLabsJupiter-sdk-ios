@@ -260,4 +260,60 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
             delegate?.onJupiterResult(jupiterResult)
         }
     }
+    
+    // MARK: - Blacklist Check
+    public func checkServiceAvailableDevice(completion: @escaping (Bool) -> Void) {
+        JupiterNetworkManager.shared.getBlackList(url: JupiterNetworkConstants.getClientBlacklistURL()) { [weak self] statusCode, returnedString in
+            guard let self = self else { return }
+            
+            let (cachedServiceAvailable, cachedUpdatedTime) = loadBlacklistInfo()
+            var isServiceAvailable = cachedServiceAvailable
+            var blacklistUpdatedTime = cachedUpdatedTime
+            
+            if statusCode == 200, let blackListDevices = decodeBlackListDevices(from: returnedString) {
+                let updatedTime = blackListDevices.updatedTime
+                let isBlacklistUpdated = cachedUpdatedTime.isEmpty || cachedUpdatedTime != updatedTime
+                
+                if isBlacklistUpdated {
+                    logBlacklistDetails(blackListDevices)
+                    isServiceAvailable = !blackListDevices.iOS.apple.contains { $0.contains(self.deviceIdentifier) }
+                }
+                blacklistUpdatedTime = updatedTime
+            }
+            
+            saveBlacklistInfo(isServiceAvailable: isServiceAvailable, updatedTime: blacklistUpdatedTime)
+            completion(isServiceAvailable)
+        }
+    }
+
+    private func loadBlacklistInfo() -> (Bool, String) {
+        let isServiceAvailable = UserDefaults.standard.bool(forKey: "JupiterIsServiceAvailable")
+        let updatedTime = UserDefaults.standard.string(forKey: "JupiterBlacklistUpdatedTime") ?? ""
+        return (isServiceAvailable, updatedTime)
+    }
+
+    private func saveBlacklistInfo(isServiceAvailable: Bool, updatedTime: String) {
+        UserDefaults.standard.set(isServiceAvailable, forKey: "JupiterIsServiceAvailable")
+        UserDefaults.standard.set(updatedTime, forKey: "JupiterBlacklistUpdatedTime")
+    }
+
+    private func logBlacklistDetails(_ blackListDevices: BlackListDevices) {
+        let timestamp = TJLabsUtilFunctions.shared.getLocalTimeString()
+        print("\(timestamp) , (TJLabsJupiter) Blacklist: iOS Devices = \(blackListDevices.iOS.apple)")
+        print("\(timestamp) , (TJLabsJupiter) Blacklist: Updated Time = \(blackListDevices.updatedTime)")
+    }
+
+    public func decodeBlackListDevices(from jsonString: String) -> BlackListDevices? {
+        guard let jsonData = jsonString.data(using: .utf8) else { return nil }
+        
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        
+        do {
+            return try decoder.decode(BlackListDevices.self, from: jsonData)
+        } catch {
+            print("Error decoding JSON: \(error)")
+            return nil
+        }
+    }
 }
