@@ -46,16 +46,19 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
         
         if !isNetworkAvailable {
             delegate?.onJupiterError(0, msgCheckNetworkAvailable)
+            delegate?.onJupiterSuccess(false)
             return
         }
         
         if !isIdAvailable {
             delegate?.onJupiterError(0, msgCheckIdAvailable)
+            delegate?.onJupiterSuccess(false)
             return
         }
         
         if isStartService {
             delegate?.onJupiterError(0, "The service is already starting.")
+            delegate?.onJupiterSuccess(false)
             return
         }
         
@@ -93,6 +96,7 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
             self.delegate?.onJupiterSuccess(true)
         }, onError: { msg in
             self.delegate?.onJupiterError(0, msg)
+            self.delegate?.onJupiterSuccess(false)
         })
     }
 
@@ -186,7 +190,10 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
     }
     
     // MARK: - Delegates
-    public func onRfdError(_ generator: RFDGenerator, code: Int, msg: String) {}
+    public func onRfdError(_ generator: RFDGenerator, code: Int, msg: String) {
+        sharedRfdDelegate.onRfdError(generator, code: code, msg: msg)
+    }
+    
     public func onRfdResult(_ generator: RFDGenerator, receivedForce: ReceivedForce) {
         sendRfd(rfd: receivedForce)
         sharedRfdDelegate.onRfdResult(generator, receivedForce: receivedForce)
@@ -199,9 +206,16 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
         sharedUvdDelegate.onUvdResult(generator, mode: mode, userVelocity: userVelocity)
         sendUvd(uvd: userVelocity)
     }
-    public func onUvdError(_ generator: UVDGenerator, error: String) {}
-    public func onUvdPauseMillis(_ generator: UVDGenerator, time: Double) {}
-    public func onVelocityResult(_ generator: UVDGenerator, kmPh: Double) {}
+    public func onUvdError(_ generator: UVDGenerator, error: String) {
+        sharedUvdDelegate.onUvdError(generator, error: error)
+    }
+    
+    public func onUvdPauseMillis(_ generator: UVDGenerator, time: Double) {
+        sharedUvdDelegate.onUvdPauseMillis(generator, time: time)
+    }
+    public func onVelocityResult(_ generator: UVDGenerator, kmPh: Double) {
+        sharedUvdDelegate.onVelocityResult(generator, kmPh: kmPh)
+    }
     
     // MARK: - Jupiter Timer
     func startTimer() {
