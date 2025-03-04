@@ -10,6 +10,7 @@ public class JupiterNetworkConstants {
     static let REC_UVD_SERVER_VERSION = "2024-04-19"
 
     static let CALC_FLT_SERVER_VERSION = "2024-12-12"
+    static let CALC_OSR_SERVER_VERSION = "2024-08-30"
     
     private static let HTTP_PREFIX = "https://"
     private static let JUPITER_SUFFIX = ".jupiter.tjlabs.dev"
@@ -83,5 +84,9 @@ public class JupiterNetworkConstants {
     
     public static func getCalcFltURL() -> String {
         return CALC_URL + "/" + CALC_FLT_SERVER_VERSION + "/flt"
+    }
+    
+    public static func getCalcOsrURL() -> String {
+        return CALC_URL + "/" + CALC_OSR_SERVER_VERSION + "/osr"
     }
 }
