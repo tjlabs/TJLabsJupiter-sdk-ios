@@ -104,6 +104,79 @@ struct FLT {
     var searchInfo: SearchInfo
 }
 
+struct OnSpotRecognitionInput: Encodable {
+    var operating_system: String
+    var user_id: String
+    var mobile_time: Int
+    var normalization_scale: Double
+    var device_min_rss: Int
+    var standard_min_rss: Int
+}
+
+// MARK: - OnSpotRecognition
+public struct OnSpotRecognitionOutput: Codable {
+    public var mobile_time: Int
+    public var building_name: String
+    public var level_name: String
+    public var linked_level_name: String
+    public var spot_id: Int
+    public var spot_distance: Double
+    public var spot_range: [Int]
+    public var spot_direction_down: [Int]
+    public var spot_direction_up: [Int]
+
+    public init() {
+        self.mobile_time = 0
+        self.building_name = ""
+        self.level_name = ""
+        self.linked_level_name = ""
+        self.spot_id = 0
+        self.spot_distance = 0
+        self.spot_range = []
+        self.spot_direction_down = []
+        self.spot_direction_up = []
+    }
+}
+
+// MARK: - JupiterResult
+struct UserMask: Encodable {
+    let user_id: String
+    let mobile_time: Int
+    let section_number: Int
+    let index: Int
+    let x: Int
+    let y: Int
+    let absolute_heading: Double
+}
+
+// MARK: - MobileResult & Report
+public struct MobileResult: Encodable {
+    public var user_id: String
+    public var mobile_time: Int
+    public var sector_id: Int
+    public var building_name: String
+    public var level_name: String
+    public var scc: Double
+    public var x: Double
+    public var y: Double
+    public var absolute_heading: Double
+    public var phase: Int
+    public var calculated_time: Double
+    public var index: Int
+    public var velocity: Double
+    public var ble_only_position: Bool
+    public var normalization_scale: Double
+    public var device_min_rss: Int
+    public var sc_compensation: Double
+    public var is_indoor: Bool
+}
+
+public struct MobileReport: Encodable {
+    public var user_id: String
+    public var mobile_time: Int
+    public var report: Int
+}
+
 // MARK: - JupiterResult
 public struct JupiterResult: Codable {
     public var mobile_time: Int
@@ -141,6 +214,54 @@ public struct JupiterResult: Codable {
 //        self.validity = false
 //        self.validity_flag = 0
 //    }
+}
+
+// MARK: - RSSI Compensation
+struct RcDeviceOsInput: Codable {
+    let sector_id: Int
+    let device_model: String
+    let os_version: Int
+}
+
+struct RcDeviceInput: Codable {
+    let sector_id: Int
+    let device_model: String
+}
+
+public struct RcInfo: Codable {
+    let os_version: Int
+    let normalization_scale: Double
+}
+
+public struct RcInfoOutputList: Codable {
+    let rss_compensations: [RcInfo]
+}
+
+struct RcInfoSave: Codable {
+    let sector_id: Int
+    let device_model: String
+    let os_version: Int
+    let normalization_scale: Double
+}
+
+// MARK: - BlackList
+public struct BlackListDevices: Codable {
+    let android: [String: [String]]
+    let iOS: IOSSupport
+    let updatedTime: String
+    
+    enum CodingKeys: String, CodingKey {
+        case android = "Android"
+        case iOS = "iOS"
+        case updatedTime = "updated_time"
+    }
+}
+
+public struct IOSSupport: Codable {
+    let apple: [String]
+    enum CodingKeys: String, CodingKey {
+        case apple = "Apple"
+    }
 }
 
 public protocol JupiterManagerDelegate: AnyObject {
