@@ -222,7 +222,7 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
         if (self.osrTimer == nil) {
             let queue = DispatchQueue(label: Bundle.main.bundleIdentifier! + ".osrTimer")
             self.osrTimer = DispatchSource.makeTimerSource(queue: queue)
-            self.osrTimer!.schedule(deadline: .now(), repeating: JupiterConstants.OSR_INTERVAL)
+            self.osrTimer!.schedule(deadline: .now(), repeating: JupiterTime.OSR_INTERVAL)
             self.osrTimer!.setEventHandler { [weak self] in
                 guard let self = self else { return }
                 self.osrTimerUpdate()
@@ -233,7 +233,7 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
         if (self.outputTimer == nil) {
             let queue = DispatchQueue(label: Bundle.main.bundleIdentifier! + ".outputTimer")
             self.outputTimer = DispatchSource.makeTimerSource(queue: queue)
-            self.outputTimer!.schedule(deadline: .now(), repeating: JupiterConstants.OUTPUT_INTEVAL)
+            self.outputTimer!.schedule(deadline: .now(), repeating: JupiterTime.OUTPUT_INTEVAL)
             self.outputTimer!.setEventHandler { [weak self] in
                 guard let self = self else { return }
                 self.outputTimerUpdate()
