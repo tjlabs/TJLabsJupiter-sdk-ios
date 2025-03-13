@@ -3,7 +3,6 @@ import TJLabsCommon
 
 class JupiterTrajectoryCalculator: RFDGeneratorDelegate, UVDGeneratorDelegate {
     // MARK: - Properties
-    private let USER_TRAJECTORY_LENGTH_PDR: Double = 20
     private var currentUserTrajectoryInfo = [TrajectoryInfo]()
     private var velocity: Double = 0
     private var numBleChannels: Int = 0
@@ -30,7 +29,7 @@ class JupiterTrajectoryCalculator: RFDGeneratorDelegate, UVDGeneratorDelegate {
             tempUnitTrajectoryInfo.userHeading = latestFltOutput.absolute_heading
             
             self.currentUserTrajectoryInfo.append(tempUnitTrajectoryInfo)
-            self.currentUserTrajectoryInfo = self.updateTrajectoryInfoWithLength(trajectoryInfo: self.currentUserTrajectoryInfo, LENGTH_CONDITION: self.USER_TRAJECTORY_LENGTH_PDR)
+            self.currentUserTrajectoryInfo = self.updateTrajectoryInfoWithLength(trajectoryInfo: self.currentUserTrajectoryInfo, LENGTH_CONDITION: JupiterMode.USER_TRAJECTORY_LENGTH_PDR)
         }
     }
     
@@ -83,7 +82,7 @@ class JupiterTrajectoryCalculator: RFDGeneratorDelegate, UVDGeneratorDelegate {
     private func makeSearchInfoInPhase3() {
         let trajectoryInfo = self.currentUserTrajectoryInfo
 
-        let paddingValue = self.USER_TRAJECTORY_LENGTH_PDR * 0.8
+        let paddingValue = JupiterMode.USER_TRAJECTORY_LENGTH_PDR * 0.8
         var userX = trajectoryInfo.last!.userX
         var userY = trajectoryInfo.last!.userY
         
