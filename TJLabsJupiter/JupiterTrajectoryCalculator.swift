@@ -12,7 +12,7 @@ class JupiterTrajectoryCalculator: RFDGeneratorDelegate, UVDGeneratorDelegate {
 
     // MARK: - Methods
     private func updateTrajectoryInfo(uvd: UserVelocity) {
-        let latestFltOutput = JupiterCalculator.getJupiterResult()
+        let latestFltOutput = JupiterCalcManager.getJupiterResult()
         
         if latestFltOutput.x != 0 && latestFltOutput.y != 0 {
             var tempUnitTrajectoryInfo = TrajectoryInfo()
@@ -89,8 +89,8 @@ class JupiterTrajectoryCalculator: RFDGeneratorDelegate, UVDGeneratorDelegate {
         let uvdRawHeading = trajectoryInfo.map { $0.heading }
         let uvdHeading = uvdRawHeading.map { TJLabsUtilFunctions.shared.compensateDegree($0) }
         
-        let phaseBreakResult = JupiterCalculator.phaseBreakFineLocationTrackingResult
-        if JupiterCalculator.getPhaseBreak(),
+        let phaseBreakResult = JupiterCalcManager.phaseBreakFineLocationTrackingResult
+        if JupiterCalcManager.getPhaseBreak(),
            !phaseBreakResult.building_name.isEmpty,
            !phaseBreakResult.level_name.isEmpty {
             userX = phaseBreakResult.x
@@ -104,9 +104,9 @@ class JupiterTrajectoryCalculator: RFDGeneratorDelegate, UVDGeneratorDelegate {
             userY + paddingValue
         ]
         
-        JupiterCalculator.searchRange = searchRange.map { Int($0) }
-        JupiterCalculator.searchDirectionList = uvdHeading.map { Int($0) }
-        JupiterCalculator.tailIndex = trajectoryInfo.first!.index
+        JupiterCalcManager.searchRange = searchRange.map { Int($0) }
+        JupiterCalcManager.searchDirectionList = uvdHeading.map { Int($0) }
+        JupiterCalcManager.tailIndex = trajectoryInfo.first!.index
     }
 
     
@@ -192,7 +192,7 @@ class JupiterTrajectoryCalculator: RFDGeneratorDelegate, UVDGeneratorDelegate {
 
     func onUvdResult(_ generator: UVDGenerator, mode: UserMode, userVelocity: UserVelocity) {
         self.updateTrajectoryInfo(uvd: userVelocity)
-        self.makeSearchInfo(phase: JupiterCalculator.phase)
+        self.makeSearchInfo(phase: JupiterCalcManager.phase)
     }
 
     func onVelocityResult(_ generator: UVDGenerator, kmPh: Double) {
