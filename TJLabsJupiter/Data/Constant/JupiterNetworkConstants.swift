@@ -25,17 +25,20 @@ public class JupiterNetworkConstants {
     private(set) static var CALC_URL = HTTP_PREFIX + REGION_PREFIX + "calc" + JUPITER_SUFFIX
     private(set) static var CLIENT_URL = HTTP_PREFIX + REGION_PREFIX + "client" + JUPITER_SUFFIX
     
-    public static func setServerURL(region: JupiterRegion) {
+    public static func setServerURL(region: String) {
         switch region {
-        case .KOREA:
+        case JupiterRegion.KOREA.rawValue:
             REGION_PREFIX = "ap-northeast-2."
             REGION_NAME = "Korea"
-        case .CANADA:
+        case JupiterRegion.KOREA.rawValue:
             REGION_PREFIX = "ca-central-1."
             REGION_NAME = "Canada"
-        case .US:
+        case JupiterRegion.KOREA.rawValue:
             REGION_PREFIX = "us-east-1."
             REGION_NAME = "US"
+        default:
+            REGION_PREFIX = "ap-northeast-2."
+            REGION_NAME = "Korea"
         }
         
         USER_URL = HTTP_PREFIX + REGION_PREFIX + "user" + JUPITER_SUFFIX
