@@ -2,8 +2,10 @@
 import Foundation
 import TJLabsCommon
 
-public enum JupiterRegion {
-    case KOREA, US, CANADA
+public enum JupiterRegion: String {
+    case KOREA = "KOREA"
+    case US_EAST = "US_EAST"
+    case CANADA = "CANADA"
 }
 
 

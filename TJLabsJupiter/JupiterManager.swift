@@ -20,14 +20,13 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
     private let sharedRfdDelegate = SharedRFDGeneratorDelegate()
     private let sharedUvdDelegate = SharedUVDGeneratorDelegate()
     private var pressure: Double = 0.0
-    private var jupiterCalculator: JupiterCalculator?
+    private var jupiterCalcMananger: JupiterCalcManager?
     private var inputReceivedForce: [ReceivedForce] = []
     private var inputUserVelocity: [UserVelocity] = []
     private var sendRfdLength = 2
     private var sendUvdLength = 4
     
     // MARK: - JupiterResult Timer
-    var osrTimer: DispatchSourceTimer?
     var outputTimer: DispatchSourceTimer?
     
     public init(id: String) {
@@ -40,7 +39,7 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
     }
 
     // MARK: - Start & Stop Jupiter Service
-    public func startJupiter(region: JupiterRegion = .KOREA, sectorId: Int) {
+    public func startJupiter(region: String = JupiterRegion.KOREA.rawValue, sectorId: Int) {
         let (isNetworkAvailable, msgCheckNetworkAvailable) = JupiterNetworkManager.shared.isConnectedToInternet()
         let (isIdAvailable, msgCheckIdAvailable) = checkIdIsAvailable(id: id)
         
@@ -90,7 +89,7 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
         performTasksWithCounter(tasks: tasks, onComplete: {
             self.isStartService = true
             JupiterNetworkConstants.setServerURL(region: region)
-            self.jupiterCalculator = .init(id: self.id, sectorId: sectorId)
+            self.jupiterCalcMananger = .init(id: self.id, sectorId: sectorId)
             self.startGenerator(id: self.id)
             self.startTimer()
             self.delegate?.onJupiterSuccess(true)
@@ -155,7 +154,7 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
             return self?.pressure ?? 0.0
         }
         
-        sharedUvdDelegate.addListener(jupiterCalculator!)
+        sharedUvdDelegate.addListener(jupiterCalcMananger!)
     }
     
     private func stopGenerator() {
@@ -219,17 +218,6 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
     
     // MARK: - Jupiter Timer
     func startTimer() {
-        if (self.osrTimer == nil) {
-            let queue = DispatchQueue(label: Bundle.main.bundleIdentifier! + ".osrTimer")
-            self.osrTimer = DispatchSource.makeTimerSource(queue: queue)
-            self.osrTimer!.schedule(deadline: .now(), repeating: JupiterTime.OSR_INTERVAL)
-            self.osrTimer!.setEventHandler { [weak self] in
-                guard let self = self else { return }
-                self.osrTimerUpdate()
-            }
-            self.osrTimer!.resume()
-        }
-        
         if (self.outputTimer == nil) {
             let queue = DispatchQueue(label: Bundle.main.bundleIdentifier! + ".outputTimer")
             self.outputTimer = DispatchSource.makeTimerSource(queue: queue)
@@ -243,20 +231,13 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
     }
     
     func stopTimer() {
-        self.osrTimer?.cancel()
-        self.osrTimer = nil
-        
         self.outputTimer?.cancel()
         self.outputTimer = nil
     }
     
-    func osrTimerUpdate() {
-        
-    }
-    
     func outputTimerUpdate() {
-        if JupiterCalculator.isPossibleReturnJupiterResult() {
-            let jupiterResult = JupiterCalculator.getJupiterResult()
+        if JupiterCalcManager.isPossibleReturnJupiterResult() {
+            let jupiterResult = JupiterCalcManager.getJupiterResult()
             delegate?.onJupiterResult(jupiterResult)
         }
     }
