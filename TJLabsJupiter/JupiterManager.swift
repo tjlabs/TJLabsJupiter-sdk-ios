@@ -189,6 +189,9 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
     }
     
     // MARK: - Delegates
+    public func onRfdEmptyMillis(_ generator: TJLabsCommon.RFDGenerator, time: Double) {
+        //
+    }
     public func onRfdError(_ generator: RFDGenerator, code: Int, msg: String) {
         sharedRfdDelegate.onRfdError(generator, code: code, msg: msg)
     }
@@ -214,6 +217,9 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
     }
     public func onVelocityResult(_ generator: UVDGenerator, kmPh: Double) {
         sharedUvdDelegate.onVelocityResult(generator, kmPh: kmPh)
+    }
+    public func onMagNormSmoothingVarResult(_ generator: TJLabsCommon.UVDGenerator, value: Double) {
+        //
     }
     
     // MARK: - Jupiter Timer
