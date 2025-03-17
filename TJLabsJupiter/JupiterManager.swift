@@ -116,8 +116,10 @@ public class JupiterManager {
         stopGenerator()
     }
     
-    private func startGenerator() {
-        jupiterCalcMananger?.startGenerator()
+    private func startGenerator(completion: @escaping (Bool, String) -> Void) {
+        jupiterCalcMananger?.startGenerator(completion: { isSuccess, message in
+            completion(isSuccess, message)
+        })
     }
     
     private func stopGenerator() {

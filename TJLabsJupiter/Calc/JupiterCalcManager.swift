@@ -249,20 +249,29 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
         sendUvdLength = length
     }
     
-    func startGenerator() {
+    func startGenerator(completion: @escaping (Bool, String) -> Void) {
         rfdGenerator = RFDGenerator(userId: JupiterCalcManager.id)
         uvdGenerator = UVDGenerator(userId: JupiterCalcManager.id)
         
-        rfdGenerator?.generateRfd()
-        rfdGenerator?.delegate = self
-        
-        uvdGenerator?.generateUvd()
-        uvdGenerator?.delegate = self
-        
-        rfdGenerator?.pressureProvider = { [weak self] in
-            return self?.pressure ?? 0.0
+        if ((rfdGenerator?.checkIsAvailableRfd()) != nil) {
+            if ((uvdGenerator?.checkIsAvailableUvd()) != nil) {
+                rfdGenerator?.generateRfd()
+                rfdGenerator?.delegate = self
+                
+                uvdGenerator?.generateUvd()
+                uvdGenerator?.delegate = self
+                
+                rfdGenerator?.pressureProvider = { [weak self] in
+                    return self?.pressure ?? 0.0
+                }
+                startTimer()
+                completion(true, "")
+            } else {
+                completion(false, "checkIsAvailableUvd : false")
+            }
+        } else {
+            completion(false, "checkIsAvailableRfd : false")
         }
-        startTimer()
     }
     
     func stopGenerator() {
