@@ -86,8 +86,15 @@ public class JupiterManager {
             self.jupiterCalcMananger = .init(region: region, id: self.id, sectorId: sectorId)
             self.jupiterCalcMananger?.setSendRfdLength(self.sendRfdLength)
             self.jupiterCalcMananger?.setSendUvdLength(self.sendUvdLength)
-            self.startTimer()
-            self.delegate?.onJupiterSuccess(true)
+            self.startGenerator(completion: { [self] isSuccess, msg in
+                if isSuccess {
+                    self.startTimer()
+                    self.delegate?.onJupiterSuccess(true)
+                } else {
+                    self.delegate?.onJupiterError(0, msg)
+                    self.delegate?.onJupiterSuccess(false)
+                }
+            })
         }, onError: { msg in
             self.delegate?.onJupiterError(0, msg)
             self.delegate?.onJupiterSuccess(false)
