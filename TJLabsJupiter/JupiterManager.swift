@@ -3,7 +3,7 @@ import Foundation
 import TJLabsCommon
 import UIKit
 
-public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
+public class JupiterManager {
     public static let sdkVersion: String = "0.0.1"
     
     var id: String = ""
@@ -14,15 +14,9 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
     var deviceOsVersion: Int
     
     public weak var delegate: JupiterManagerDelegate?
-    private var rfdGenerator: RFDGenerator?
-    private var uvdGenerator: UVDGenerator?
+    
     private var isStartService = false
-    private let sharedRfdDelegate = SharedRFDGeneratorDelegate()
-    private let sharedUvdDelegate = SharedUVDGeneratorDelegate()
-    private var pressure: Double = 0.0
     private var jupiterCalcMananger: JupiterCalcManager?
-    private var inputReceivedForce: [ReceivedForce] = []
-    private var inputUserVelocity: [UserVelocity] = []
     private var sendRfdLength = 2
     private var sendUvdLength = 4
     
@@ -89,8 +83,9 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
         performTasksWithCounter(tasks: tasks, onComplete: {
             self.isStartService = true
             JupiterNetworkConstants.setServerURL(region: region)
-            self.jupiterCalcMananger = .init(id: self.id, sectorId: sectorId)
-            self.startGenerator(id: self.id)
+            self.jupiterCalcMananger = .init(region: region, id: self.id, sectorId: sectorId)
+            self.jupiterCalcMananger?.setSendRfdLength(self.sendRfdLength)
+            self.jupiterCalcMananger?.setSendUvdLength(self.sendUvdLength)
             self.startTimer()
             self.delegate?.onJupiterSuccess(true)
         }, onError: { msg in
@@ -121,14 +116,17 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
         stopGenerator()
     }
     
-    // MARK: - Set REC length
-    public func setSendRfdLength(_ length: Int = 2) {
-        sendRfdLength = length
+    private func startGenerator() {
+        jupiterCalcMananger?.startGenerator()
     }
     
-    public func setSendUvdLength(_ length: Int = 4) {
-        sendUvdLength = length
+    private func stopGenerator() {
+        if isStartService {
+            jupiterCalcMananger?.stopGenerator()
+            isStartService = false
+        }
     }
+    
     
     // MARK: - ID Validation
     private func checkIdIsAvailable(id: String) -> (Bool, String) {
@@ -137,89 +135,6 @@ public class JupiterManager: RFDGeneratorDelegate, UVDGeneratorDelegate {
             return (false, msg)
         }
         return (true, "")
-    }
-    
-    // MARK: - Start & Stop Generation
-    private func startGenerator(id: String) {
-        rfdGenerator = RFDGenerator(userId: id)
-        uvdGenerator = UVDGenerator(userId: id)
-        
-        rfdGenerator?.generateRfd()
-        rfdGenerator?.delegate = self
-        
-        uvdGenerator?.generateUvd()
-        uvdGenerator?.delegate = self
-        
-        rfdGenerator?.pressureProvider = { [weak self] in
-            return self?.pressure ?? 0.0
-        }
-        
-        sharedUvdDelegate.addListener(jupiterCalcMananger!)
-    }
-    
-    private func stopGenerator() {
-        if isStartService {
-            rfdGenerator?.stopRfdGeneration()
-            uvdGenerator?.stopUvdGeneration()
-            isStartService = false
-        }
-    }
-    
-    // MARK: - Send Data to REC
-    private func sendRfd(rfd: ReceivedForce) {
-        let rfdURL = JupiterNetworkConstants.getRecRfdURL()
-        inputReceivedForce.append(rfd)
-        if inputReceivedForce.count >= sendRfdLength {
-            JupiterNetworkManager.shared.postReceivedForce(url: rfdURL, input: inputReceivedForce) { [self] statusCode, returnedString, inputRfd in
-//                print("(POST) RFD : statusCode = \(statusCode)")
-            }
-            inputReceivedForce.removeAll()
-        }
-    }
-    
-    private func sendUvd(uvd: UserVelocity) {
-        let uvdURL = JupiterNetworkConstants.getRecUvdURL()
-        inputUserVelocity.append(uvd)
-        if inputUserVelocity.count >= sendUvdLength {
-            JupiterNetworkManager.shared.postUserVelocity(url: uvdURL, input: inputUserVelocity) { [self] statusCode, returnedString, inputUvd in
-//                print("(POST) UVD : statusCode = \(statusCode)")
-            }
-            inputUserVelocity.removeAll()
-        }
-    }
-    
-    // MARK: - Delegates
-    public func onRfdEmptyMillis(_ generator: TJLabsCommon.RFDGenerator, time: Double) {
-        //
-    }
-    public func onRfdError(_ generator: RFDGenerator, code: Int, msg: String) {
-        sharedRfdDelegate.onRfdError(generator, code: code, msg: msg)
-    }
-    
-    public func onRfdResult(_ generator: RFDGenerator, receivedForce: ReceivedForce) {
-        sendRfd(rfd: receivedForce)
-        sharedRfdDelegate.onRfdResult(generator, receivedForce: receivedForce)
-    }
-    
-    public func onPressureResult(_ generator: UVDGenerator, hPa: Double) {
-        pressure = hPa
-    }
-    public func onUvdResult(_ generator: UVDGenerator, mode: UserMode, userVelocity: UserVelocity) {
-        sharedUvdDelegate.onUvdResult(generator, mode: mode, userVelocity: userVelocity)
-        sendUvd(uvd: userVelocity)
-    }
-    public func onUvdError(_ generator: UVDGenerator, error: String) {
-        sharedUvdDelegate.onUvdError(generator, error: error)
-    }
-    
-    public func onUvdPauseMillis(_ generator: UVDGenerator, time: Double) {
-        sharedUvdDelegate.onUvdPauseMillis(generator, time: time)
-    }
-    public func onVelocityResult(_ generator: UVDGenerator, kmPh: Double) {
-        sharedUvdDelegate.onVelocityResult(generator, kmPh: kmPh)
-    }
-    public func onMagNormSmoothingVarResult(_ generator: TJLabsCommon.UVDGenerator, value: Double) {
-        //
     }
     
     // MARK: - Jupiter Timer
