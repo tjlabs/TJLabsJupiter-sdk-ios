@@ -4,7 +4,6 @@ import TJLabsCommon
 import TJLabsResource
 
 class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsResourceManagerDelegate {
-    
     // MARK: - Static Properties
     static var fltRequestIndex = 4
     static var id: String = ""
@@ -249,7 +248,7 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
         sendUvdLength = length
     }
     
-    func startGenerator(completion: @escaping (Bool, String) -> Void) {
+    func startGenerator(mode: UserMode, completion: @escaping (Bool, String) -> Void) {
         rfdGenerator = RFDGenerator(userId: JupiterCalcManager.id)
         uvdGenerator = UVDGenerator(userId: JupiterCalcManager.id)
         
@@ -258,6 +257,7 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
                 rfdGenerator?.generateRfd()
                 rfdGenerator?.delegate = self
                 
+                uvdGenerator?.setUserMode(mode: mode)
                 uvdGenerator?.generateUvd()
                 uvdGenerator?.delegate = self
                 
@@ -347,27 +347,31 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
         //
     }
     
-    func onPathPixelData(_ manager: TJLabsResource.TJLabsResourceManager, isOn: Bool, pathPixelKey: String, data: TJLabsResource.PathPixelData?) {
+    func onPathPixelData(_ manager: TJLabsResource.TJLabsResourceManager, isOn: Bool, key: String, data: TJLabsResource.PathPixelData?) {
         //
     }
     
-    func onBuildingLevelImageData(_ manager: TJLabsResource.TJLabsResourceManager, isOn: Bool, imageKey: String, data: UIImage?) {
+    func onBuildingLevelImageData(_ manager: TJLabsResource.TJLabsResourceManager, isOn: Bool, key: String, data: UIImage?) {
         //
     }
     
-    func onScaleOffsetData(_ manager: TJLabsResource.TJLabsResourceManager, isOn: Bool, scaleKey: String, data: [Double]?) {
+    func onScaleOffsetData(_ manager: TJLabsResource.TJLabsResourceManager, isOn: Bool, key: String, data: [Double]?) {
         //
     }
     
-    func onUnitData(_ manager: TJLabsResource.TJLabsResourceManager, isOn: Bool, unitKey: String, data: [TJLabsResource.UnitData]?) {
+    func onUnitData(_ manager: TJLabsResource.TJLabsResourceManager, isOn: Bool, key: String, data: [TJLabsResource.UnitData]?) {
         //
     }
     
-    func onEntranceData(_ manager: TJLabsResource.TJLabsResourceManager, isOn: Bool, entranceKey: String, data: TJLabsResource.EntranceRouteData?) {
+    func onEntranceData(_ manager: TJLabsResource.TJLabsResourceManager, isOn: Bool, key: String, data: TJLabsResource.EntranceRouteData?) {
         //
     }
     
-    func onParamData(_ manager: TJLabsResource.TJLabsResourceManager, isOn: Bool, paramKey: String, data: TJLabsResource.ParameterData?) {
+    func onParamData(_ manager: TJLabsResource.TJLabsResourceManager, isOn: Bool, data: TJLabsResource.ParameterData?) {
+        //
+    }
+    
+    func onGeofenceData(_ manager: TJLabsResource.TJLabsResourceManager, isOn: Bool, key: String, data: TJLabsResource.GeofenceData?) {
         //
     }
     
