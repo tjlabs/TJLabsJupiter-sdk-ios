@@ -33,7 +33,7 @@ public class JupiterManager {
     }
 
     // MARK: - Start & Stop Jupiter Service
-    public func startJupiter(region: String = JupiterRegion.KOREA.rawValue, sectorId: Int) {
+    public func startJupiter(region: String = JupiterRegion.KOREA.rawValue, sectorId: Int, mode: UserMode) {
         let (isNetworkAvailable, msgCheckNetworkAvailable) = JupiterNetworkManager.shared.isConnectedToInternet()
         let (isIdAvailable, msgCheckIdAvailable) = checkIdIsAvailable(id: id)
         
@@ -86,7 +86,7 @@ public class JupiterManager {
             self.jupiterCalcMananger = .init(region: region, id: self.id, sectorId: sectorId)
             self.jupiterCalcMananger?.setSendRfdLength(self.sendRfdLength)
             self.jupiterCalcMananger?.setSendUvdLength(self.sendUvdLength)
-            self.startGenerator(completion: { [self] isSuccess, msg in
+            self.startGenerator(mode: mode, completion: { [self] isSuccess, msg in
                 if isSuccess {
                     self.startTimer()
                     self.delegate?.onJupiterSuccess(true)
@@ -123,8 +123,8 @@ public class JupiterManager {
         stopGenerator()
     }
     
-    private func startGenerator(completion: @escaping (Bool, String) -> Void) {
-        jupiterCalcMananger?.startGenerator(completion: { isSuccess, message in
+    private func startGenerator(mode: UserMode, completion: @escaping (Bool, String) -> Void) {
+        jupiterCalcMananger?.startGenerator(mode: mode, completion: { isSuccess, message in
             completion(isSuccess, message)
         })
     }
