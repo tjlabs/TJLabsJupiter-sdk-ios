@@ -1,7 +1,10 @@
 import Foundation
+import UIKit
 import TJLabsCommon
+import TJLabsResource
 
-class JupiterCalcManager: UVDGeneratorDelegate {
+class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsResourceManagerDelegate {
+    
     // MARK: - Static Properties
     static var fltRequestIndex = 4
     static var id: String = ""
@@ -28,6 +31,19 @@ class JupiterCalcManager: UVDGeneratorDelegate {
     static var currentVelocity: Double = 0.0
     static var currentUserMode: UserMode = .MODE_PEDESTRIAN
     static var tailIndex: Int = 0
+    
+    private var uvdStopTimeStamp: Double = 0
+    private var tjlabsResourceManager = TJLabsResourceManager()
+    private var osrTimer: DispatchSourceTimer?
+    
+    private var rfdGenerator: RFDGenerator?
+    private var uvdGenerator: UVDGenerator?
+    
+    private var pressure: Double = 0.0
+    private var inputReceivedForce: [ReceivedForce] = []
+    private var inputUserVelocity: [UserVelocity] = []
+    private var sendRfdLength = 2
+    private var sendUvdLength = 4
     
     // MARK: - Static Methods
     static func getPhaseBreak() -> Bool {
@@ -91,9 +107,11 @@ class JupiterCalcManager: UVDGeneratorDelegate {
     private var prePhase: Int = 1
 
     // MARK: - Initialization
-    init(id: String, sectorId: Int) {
+    init(region: String, id: String, sectorId: Int) {
         JupiterCalcManager.id = id
         JupiterCalcManager.sectorId = sectorId
+        tjlabsResourceManager.delegate = self
+//        tjlabsResourceManager.loadJupiterResource(region: .KOREA, sectorId: JupiterCalcManager.sectorId)
     }
 
     // MARK: - Calculation Methods
@@ -121,6 +139,14 @@ class JupiterCalcManager: UVDGeneratorDelegate {
             JupiterCalcManager.isPhaseBreak = true
         }
         self.prePhase = JupiterCalcManager.phase
+    }
+    
+    private func calcJupiterResultInStop(time: Double) {
+        if !JupiterCalcManager.isPossibleReturnJupiterResult() {
+            if (time - uvdStopTimeStamp >= 2000) {
+                uvdStopTimeStamp = time
+            }
+        }
     }
 
     private func calculatePhase1() {
@@ -191,28 +217,161 @@ class JupiterCalcManager: UVDGeneratorDelegate {
             return (false, FineLocationTrackingOutputList(flt_outputs: []))
         }
     }
-
-
+    
+    func startTimer() {
+        if (self.osrTimer == nil) {
+            let queue = DispatchQueue(label: Bundle.main.bundleIdentifier! + ".osrTimer")
+            self.osrTimer = DispatchSource.makeTimerSource(queue: queue)
+            self.osrTimer!.schedule(deadline: .now(), repeating: JupiterTime.OSR_INTERVAL)
+            self.osrTimer!.setEventHandler { [weak self] in
+                guard let self = self else { return }
+                self.osrTimerUpdate()
+            }
+            self.osrTimer!.resume()
+        }
+    }
+    
+    func stopTimer() {
+        self.osrTimer?.cancel()
+        self.osrTimer = nil
+    }
+    
+    private func osrTimerUpdate() {
+        
+    }
+    
+    // MARK: - Set REC length
+    public func setSendRfdLength(_ length: Int = 2) {
+        sendRfdLength = length
+    }
+    
+    public func setSendUvdLength(_ length: Int = 4) {
+        sendUvdLength = length
+    }
+    
+    func startGenerator(completion: @escaping (Bool, String) -> Void) {
+        rfdGenerator = RFDGenerator(userId: JupiterCalcManager.id)
+        uvdGenerator = UVDGenerator(userId: JupiterCalcManager.id)
+        
+        if ((rfdGenerator?.checkIsAvailableRfd()) != nil) {
+            if ((uvdGenerator?.checkIsAvailableUvd()) != nil) {
+                rfdGenerator?.generateRfd()
+                rfdGenerator?.delegate = self
+                
+                uvdGenerator?.generateUvd()
+                uvdGenerator?.delegate = self
+                
+                rfdGenerator?.pressureProvider = { [weak self] in
+                    return self?.pressure ?? 0.0
+                }
+                startTimer()
+                completion(true, "")
+            } else {
+                completion(false, "checkIsAvailableUvd : false")
+            }
+        } else {
+            completion(false, "checkIsAvailableRfd : false")
+        }
+    }
+    
+    func stopGenerator() {
+        rfdGenerator?.stopRfdGeneration()
+        uvdGenerator?.stopUvdGeneration()
+        stopTimer()
+    }
+    
+    // MARK: - Send Data to REC
+    private func sendRfd(rfd: ReceivedForce) {
+        let rfdURL = JupiterNetworkConstants.getRecRfdURL()
+        inputReceivedForce.append(rfd)
+        if inputReceivedForce.count >= sendRfdLength {
+            JupiterNetworkManager.shared.postReceivedForce(url: rfdURL, input: inputReceivedForce) { [self] statusCode, returnedString, inputRfd in
+//                print("(POST) RFD : statusCode = \(statusCode)")
+            }
+            inputReceivedForce.removeAll()
+        }
+    }
+    
+    private func sendUvd(uvd: UserVelocity) {
+        let uvdURL = JupiterNetworkConstants.getRecUvdURL()
+        inputUserVelocity.append(uvd)
+        if inputUserVelocity.count >= sendUvdLength {
+            JupiterNetworkManager.shared.postUserVelocity(url: uvdURL, input: inputUserVelocity) { [self] statusCode, returnedString, inputUvd in
+//                print("(POST) UVD : statusCode = \(statusCode)")
+            }
+            inputUserVelocity.removeAll()
+        }
+    }
+    
+    // MARK: - RFDGeneratorDelegate Methods
+    func onRfdResult(_ generator: TJLabsCommon.RFDGenerator, receivedForce: TJLabsCommon.ReceivedForce) {
+        sendRfd(rfd: receivedForce)
+    }
+    
+    func onRfdError(_ generator: TJLabsCommon.RFDGenerator, code: Int, msg: String) {
+        //
+    }
+    
+    func onRfdEmptyMillis(_ generator: TJLabsCommon.RFDGenerator, time: Double) {
+        //
+    }
+    
     // MARK: - UVDGeneratorDelegate Methods
     func onPressureResult(_ generator: UVDGenerator, hPa: Double) {
         // TODO: Handle pressure result
+        pressure = hPa
     }
-
     func onUvdError(_ generator: UVDGenerator, error: String) {
         // TODO: Handle UVD error
     }
-
     func onUvdPauseMillis(_ generator: UVDGenerator, time: Double) {
         // TODO: Handle UVD pause
+        calcJupiterResultInStop(time: time)
     }
-
     func onUvdResult(_ generator: UVDGenerator, mode: UserMode, userVelocity: UserVelocity) {
+        sendUvd(uvd: userVelocity)
         JupiterCalcManager.currentUserMode = mode
         JupiterCalcManager.currentUvd = userVelocity
+        uvdStopTimeStamp = 0
         calcJupiterResult()
     }
-
     func onVelocityResult(_ generator: UVDGenerator, kmPh: Double) {
         JupiterCalcManager.currentVelocity = kmPh
+    }
+    func onMagNormSmoothingVarResult(_ generator: TJLabsCommon.UVDGenerator, value: Double) {
+        //
+    }
+    
+    // MARK: - TJLabsResourceManagerDelegate Methods
+    func onBuildingLevelData(_ manager: TJLabsResource.TJLabsResourceManager, isOn: Bool, buildingLevelData: [String : [String]]) {
+        //
+    }
+    
+    func onPathPixelData(_ manager: TJLabsResource.TJLabsResourceManager, isOn: Bool, pathPixelKey: String, data: TJLabsResource.PathPixelData?) {
+        //
+    }
+    
+    func onBuildingLevelImageData(_ manager: TJLabsResource.TJLabsResourceManager, isOn: Bool, imageKey: String, data: UIImage?) {
+        //
+    }
+    
+    func onScaleOffsetData(_ manager: TJLabsResource.TJLabsResourceManager, isOn: Bool, scaleKey: String, data: [Double]?) {
+        //
+    }
+    
+    func onUnitData(_ manager: TJLabsResource.TJLabsResourceManager, isOn: Bool, unitKey: String, data: [TJLabsResource.UnitData]?) {
+        //
+    }
+    
+    func onEntranceData(_ manager: TJLabsResource.TJLabsResourceManager, isOn: Bool, entranceKey: String, data: TJLabsResource.EntranceRouteData?) {
+        //
+    }
+    
+    func onParamData(_ manager: TJLabsResource.TJLabsResourceManager, isOn: Bool, paramKey: String, data: TJLabsResource.ParameterData?) {
+        //
+    }
+    
+    func onError(_ manager: TJLabsResource.TJLabsResourceManager, error: TJLabsResource.ResourceError) {
+        //
     }
 }
