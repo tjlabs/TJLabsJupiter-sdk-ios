@@ -1,6 +1,15 @@
 
 import Foundation
 
+// MARK: - JupiterCalculatorResults
+struct JupiterCalculatorResults {
+    var fltResultList: [FineLocationTrackingOutput]
+    var fltInput: FineLocationTrackingInput
+    var inputTrajectoryInfo: [TrajectoryInfo]
+    var inputSearchInfo: SearchInfo
+}
+
+
 // MARK: - FineLocationTracking
 public struct FineLocationTrackingOutput: Codable {
     public var mobile_time: Int

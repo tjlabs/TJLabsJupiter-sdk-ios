@@ -9,29 +9,50 @@ public enum JupiterRegion: String {
 }
 
 
-// MARK: - FineLocationTracking
-public struct TrajectoryInfo {
-    public var index: Int = 0
-    public var length: Double = 0
-    public var heading: Double = 0
-    public var velocity: Double = 0
-    public var lookingFlag: Bool = false
-    public var isIndexChanged: Bool = false
-    public var numBleChannels: Int = 0
-    public var scc: Double = 0
-    public var userBuilding: String = ""
-    public var userLevel: String = ""
-    public var userX: Double = 0
-    public var userY: Double = 0
-    public var userHeading: Double = 0
-    public var userPmSuccess: Bool = false
-    public var userTuHeading: Double = 0
+// MARK: - TrajectoryInfo
+struct TrajectoryInfo {
+    var index: Int = 0
+    var length: Double = 0
+    var heading: Double = 0
+    var velocity: Double = 0
+    var lookingFlag: Bool = false
+    var isIndexChanged: Bool = false
+    var numBleChannels: Int = 0
+    var scc: Double = 0
+    var userBuilding: String = ""
+    var userLevel: String = ""
+    var userX: Double = 0
+    var userY: Double = 0
+    var userHeading: Double = 0
+    var userPmSuccess: Bool = false
+    var userTuHeading: Double = 0
 }
 
-public struct SearchInfo {
-    public var searchRange: [Int] = []
-    public var searchDirection: [Int] = [0, 90, 180, 270]
-    public var tailIndex: Int = 1
+struct SearchInfo {
+    var searchRange: [Int] = []
+    var searchDirection: [Int] = [0, 90, 180, 270]
+    var tailIndex: Int = 1
+}
+
+// MARK: - Node
+struct NodeCandidateInfo {
+    var isPhaseBreak: Bool
+    var nodeCandidatesInfo: [PassedNodeInfo]
+}
+
+struct PassedNodeInfo {
+    var nodeNumber: Int
+    var nodeCoord: [Double]
+    var nodeHeadings: [Double]
+    var matchedIndex: Int
+    var userHeading: Double
+}
+
+struct xyhs {
+    var x: Double = 0
+    var y: Double = 0
+    var heading: Double = 0
+    var scale: Double = 0
 }
 
 // MARK: - JupiterResult
