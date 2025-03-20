@@ -1,4 +1,6 @@
 
+import TJLabsCommon
+
 class JupiterMode {
     static let MODE_DR = "dr"
     static let MODE_PDR = "pdr"
@@ -22,11 +24,12 @@ class JupiterMode {
     static var PADDING_VALUE_LARGE: Double =  20
     static var PADDING_VALUES: [Double] = Array(repeating: PADDING_VALUE, count: 4)
     static let DEFAULT_HEADINGS: [Double] = [0, 90, 180, 270]
+    static let HEADING_RANGE: Double = 46
     
-    static func updateParam(mode: String, phase: Int) {
-        if mode == MODE_PDR {
+    static func updateParam(mode: UserMode, phase: Int) {
+        if mode == .MODE_PEDESTRIAN {
             setPDRParam(phase: phase)
-        } else if mode == MODE_DR {
+        } else if mode == .MODE_VEHICLE {
             setDRParam(phase: phase)
         }
     }
