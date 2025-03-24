@@ -4,8 +4,8 @@ import TJLabsCommon
 import TJLabsResource
 
 class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsResourceManagerDelegate {
+    
     // MARK: - Static Properties
-    static var fltRequestIndex = 4
     static var id: String = ""
     static var sectorId: Int = 0
     static var region: String = JupiterRegion.KOREA.rawValue
@@ -18,26 +18,25 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
     static var absoluteHeading: Double = 0.0
     static var phase: Int = 1
     static var isPhaseBreak: Bool = false
-    static var phaseBreakFineLocationTrackingResult = FineLocationTrackingOutput()
     static var calTime: Double = 0.0
     static var currentUvd = UserVelocity(user_id: "", mobile_time: 0, index: 0, length: 0, heading: 0, looking: false)
     static var searchRange = [Int]()
     static var searchDirectionList = [Int]()
     static var bleOnlyPosition: Bool = false
-    static var isIndoor: Bool = false
-    static var validity: Bool = false
-    static var validityFlag: Int = 0
+    
     static var currentVelocity: Double = 0.0
     static var currentUserMode: UserMode = .MODE_PEDESTRIAN
+    private var pressure: Double = 0.0
     
     private var uvdStopTimeStamp: Double = 0
     private var tjlabsResourceManager = TJLabsResourceManager()
     private var osrTimer: DispatchSourceTimer?
+    private var simulationRfdTimer: DispatchSourceTimer?
+    private var simulationUvdTimer: DispatchSourceTimer?
     
     private var rfdGenerator: RFDGenerator?
     private var uvdGenerator: UVDGenerator?
     
-    private var pressure: Double = 0.0
     private var inputReceivedForce: [ReceivedForce] = []
     private var inputUserVelocity: [UserVelocity] = []
     private var sendRfdLength = 2
@@ -49,12 +48,16 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
     static var retry = false
 
     static var normalizationScale: Double = 1
-    static var deviceMinRss: Int = -99
-
+    static var deviceMinRss: Double = -99
+    static var standardMinRss: Double = -99
+    
     static var isReadyPpResource = false
     static var isReadyEntranceResource = false
 
-    static var isInEntrance = false
+    static var isIndoor: Bool = false
+    static var isRouteTrack: Bool = false
+    static var validity: Bool = false
+    static var validityFlag: Int = 0
     static var isVenus = false
 
     static var currentServerResult = FineLocationTrackingOutput()
@@ -65,17 +68,8 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
     static var headSectionInfo = 0
     
     // MARK: - Static Methods
-    static func getPhaseBreak() -> Bool {
-        if isPhaseBreak {
-            isPhaseBreak = false
-            return true
-        } else {
-            return false
-        }
-    }
-    
     static func getJupiterInput() -> FineLocationTrackingInput {
-        return FineLocationTrackingInput(user_id: id, mobile_time: TJLabsUtilFunctions.shared.getCurrentTimeInMilliseconds(), sector_id: sectorId, operating_system: os, building_name: buildingName, level_name_list: JupiterBuildingLevelChanager.makeLevelList(sectorId: sectorId, building: buildingName, level: levelName, x: x, y: y, mode: currentUserMode), phase: phase, search_range: searchRange, search_direction_list: searchDirectionList, normalization_scale: normalizationScale, device_min_rss: deviceMinRss, sc_compensation_list: getScCompensationList(phase: phase), tail_index: tailIndex, head_section_number: headSectionInfo, node_number_list: nodeNumberList, node_index: nodeIndex, retry: retry)
+        return FineLocationTrackingInput(user_id: id, mobile_time: TJLabsUtilFunctions.shared.getCurrentTimeInMilliseconds(), sector_id: sectorId, operating_system: os, building_name: buildingName, level_name_list: JupiterBuildingLevelChanager.makeLevelList(sectorId: sectorId, building: buildingName, level: levelName, x: x, y: y, mode: currentUserMode), phase: phase, search_range: searchRange, search_direction_list: searchDirectionList, normalization_scale: normalizationScale, device_min_rss: Int(deviceMinRss), sc_compensation_list: getScCompensationList(phase: phase), tail_index: tailIndex, head_section_number: headSectionInfo, node_number_list: nodeNumberList, node_index: nodeIndex, retry: retry)
     }
     
     static func getJupiterResult() -> JupiterResult {
@@ -85,6 +79,16 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
         x = currentServerResult.x
         y = currentServerResult.y
         absoluteHeading = currentServerResult.absolute_heading
+        
+        // -- //
+        if !isRouteTrack {
+            if !isIndoor {
+                isIndoor = x != 0 && y != 0 && buildingName != "" && levelName != "" && levelName != "B0"
+            }
+        } else {
+            isIndoor = true
+        }
+        // -- //
         
         var currentResult = JupiterResult(
             mobile_time: TJLabsUtilFunctions.shared.getCurrentTimeInMilliseconds(),
@@ -116,27 +120,6 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
         
         return currentResult
     }
-
-    static func getLatestFineLocationTrackingInput() -> FineLocationTrackingInput {
-        return FineLocationTrackingInput(
-            user_id: id,
-            mobile_time: TJLabsUtilFunctions.shared.getCurrentTimeInMilliseconds(),
-            sector_id: sectorId,
-            operating_system: os,
-            building_name: buildingName,
-            level_name_list: [levelName],
-            phase: phase,
-            search_range: searchRange,
-            search_direction_list: searchDirectionList,
-            normalization_scale: 1.0,
-            device_min_rss: -99,
-            sc_compensation_list: [1.0],
-            tail_index: tailIndex,
-            head_section_number: 0,
-            node_number_list: [],
-            node_index: 0,
-            retry: false)
-    }
     
     static func getScCompensationList(phase : Int) -> [Double] {
         return phase <= 3 ? [1.0] : [1.01]
@@ -154,11 +137,77 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
         tjlabsResourceManager.delegate = self
         tjlabsResourceManager.loadJupiterResource(region: region, sectorId: sectorId)
     }
+    
+    // MARK: - Timer
+    func startTimer() {
+        if (self.osrTimer == nil) {
+            let queue = DispatchQueue(label: Bundle.main.bundleIdentifier! + ".osrTimer")
+            self.osrTimer = DispatchSource.makeTimerSource(queue: queue)
+            self.osrTimer!.schedule(deadline: .now(), repeating: JupiterTime.OSR_INTERVAL)
+            self.osrTimer!.setEventHandler { [weak self] in
+                guard let self = self else { return }
+                self.osrTimerUpdate()
+            }
+            self.osrTimer!.resume()
+        }
+        
+        if JupiterSimulator.shared.isSimulationMode {
+            if (self.simulationRfdTimer == nil) {
+                let queue = DispatchQueue(label: Bundle.main.bundleIdentifier! + ".simulationRfdTimer")
+                self.simulationRfdTimer = DispatchSource.makeTimerSource(queue: queue)
+                self.simulationRfdTimer!.schedule(deadline: .now(), repeating: JupiterTime.RFD_INTERVAL)
+                self.simulationRfdTimer!.setEventHandler { [weak self] in
+                    guard let self = self else { return }
+                    self.rfdTimerUpdate()
+                }
+                self.simulationRfdTimer!.resume()
+            }
+            
+            if (self.simulationUvdTimer == nil) {
+                let queue = DispatchQueue(label: Bundle.main.bundleIdentifier! + ".simulationUvdTimer")
+                self.simulationUvdTimer = DispatchSource.makeTimerSource(queue: queue)
+                self.simulationUvdTimer!.schedule(deadline: .now(), repeating: JupiterTime.UVD_INTERVAL)
+                self.simulationUvdTimer!.setEventHandler { [weak self] in
+                    guard let self = self else { return }
+                    self.uvdTimerUpdate()
+                }
+                self.simulationUvdTimer!.resume()
+            }
+        }
+    }
+    
+    func stopTimer() {
+        self.osrTimer?.cancel()
+        self.osrTimer = nil
+        
+        if JupiterSimulator.shared.isSimulationMode {
+            self.simulationRfdTimer?.cancel()
+            self.simulationRfdTimer = nil
+            
+            self.simulationUvdTimer?.cancel()
+            self.simulationUvdTimer = nil
+        }
+    }
+    
+    private func osrTimerUpdate() {
+        
+    }
+    
+    private func rfdTimerUpdate() {
+        let bleAvg = JupiterSimulator.shared.getSimulationBleData()
+        let rfd = ReceivedForce(user_id: JupiterCalcManager.id, mobile_time: TJLabsUtilFunctions.shared.getCurrentTimeInMilliseconds(), ble: bleAvg, pressure: self.pressure)
+        handleRfd(rfd: rfd)
+    }
+    
+    private func uvdTimerUpdate() {
+        
+    }
 
     // MARK: - Calculation Methods
     private func calcJupiterResult(uvd: UserVelocity) {
-        if JupiterCalcManager.isInEntrance {
-            
+        if JupiterCalcManager.isRouteTrack {
+            JupiterCalcManager.currentServerResult = JupiterRouteTracker.shared.startRouteTracking(uvd: uvd, curResult: JupiterCalcManager.currentServerResult)
+            print("(CheckRouteTracking) : simul result // x = \(JupiterCalcManager.currentServerResult.x) , y = \(JupiterCalcManager.currentServerResult.y) , h = \(JupiterCalcManager.currentServerResult.absolute_heading)")
         } else {
             if JupiterCalcManager.isVenus {
                 if uvd.index % JupiterMode.RQ_IDX == 0 {
@@ -199,28 +248,6 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
             JupiterCalcManager.preServerResult = JupiterCalcManager.currentServerResult
             JupiterCalcManager.preServerResultMobileTime = TJLabsUtilFunctions.shared.getCurrentTimeInMillisecondsDouble()
         })
-    }
-    
-    func startTimer() {
-        if (self.osrTimer == nil) {
-            let queue = DispatchQueue(label: Bundle.main.bundleIdentifier! + ".osrTimer")
-            self.osrTimer = DispatchSource.makeTimerSource(queue: queue)
-            self.osrTimer!.schedule(deadline: .now(), repeating: JupiterTime.OSR_INTERVAL)
-            self.osrTimer!.setEventHandler { [weak self] in
-                guard let self = self else { return }
-                self.osrTimerUpdate()
-            }
-            self.osrTimer!.resume()
-        }
-    }
-    
-    func stopTimer() {
-        self.osrTimer?.cancel()
-        self.osrTimer = nil
-    }
-    
-    private func osrTimerUpdate() {
-        
     }
     
     // MARK: - Set REC length
@@ -289,7 +316,30 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
     
     // MARK: - RFDGeneratorDelegate Methods
     func onRfdResult(_ generator: TJLabsCommon.RFDGenerator, receivedForce: TJLabsCommon.ReceivedForce) {
-        sendRfd(rfd: receivedForce)
+        if !JupiterSimulator.shared.isSimulationMode {
+            handleRfd(rfd: receivedForce)
+        }
+    }
+    
+    func handleRfd(rfd: ReceivedForce) {
+        sendRfd(rfd: rfd)
+        if !JupiterCalcManager.isIndoor && !JupiterCalcManager.isRouteTrack {
+            JupiterCalcManager.isRouteTrack = JupiterRouteTracker.shared.checkStartRouteTrack(bleAvg: rfd.ble, sec: 3)
+        }
+        
+        if JupiterCalcManager.isRouteTrack {
+            let checkFinishRouteTrackResult = JupiterRouteTracker.shared.stopRouteTracking(curResult: JupiterCalcManager.currentServerResult, bleAvg: rfd.ble, normalizationScale: JupiterCalcManager.normalizationScale, deviceMinRss: JupiterCalcManager.deviceMinRss
+                                                                                           , standardMinRss: JupiterCalcManager.standardMinRss)
+            if checkFinishRouteTrackResult.0 {
+                JupiterCalcManager.isRouteTrack = false
+            }
+            
+            if JupiterRouteTracker.shared.forcedStopRouteTracking(bleAvg: rfd.ble, sec: 30) {
+                JupiterCalcManager.isRouteTrack = false
+            }
+            
+            JupiterCalcManager.currentServerResult = checkFinishRouteTrackResult.1
+        }
     }
     
     func onRfdError(_ generator: TJLabsCommon.RFDGenerator, code: Int, msg: String) {
@@ -354,11 +404,19 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
         //
     }
     
-    func onEntranceData(_ manager: TJLabsResource.TJLabsResourceManager, isOn: Bool, key: String, data: TJLabsResource.EntranceRouteData?) {
-        JupiterCalcManager.isReadyEntranceResource = isOn
+    func onEntranceData(_ manager: TJLabsResource.TJLabsResourceManager, isOn: Bool, key: String, data: TJLabsResource.EntranceData?) {
         if isOn {
             if let entranceData = data {
-                
+                JupiterRouteTracker.shared.setEntranceData(region: JupiterCalcManager.region, sectorId: String(JupiterCalcManager.sectorId), data: entranceData)
+            }
+        }
+    }
+    
+    func onEntranceRouteData(_ manager: TJLabsResource.TJLabsResourceManager, isOn: Bool, key: String, data: TJLabsResource.EntranceRouteData?) {
+        JupiterCalcManager.isReadyEntranceResource = isOn
+        if isOn {
+            if let entranceRouteData = data {
+                JupiterRouteTracker.shared.setEntranceRouteData(key: key, data: entranceRouteData)
             }
         }
     }
