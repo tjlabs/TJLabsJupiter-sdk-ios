@@ -30,6 +30,66 @@ class JupiterTrajectoryCalculator {
         return trajectoryBuffer
     }
     
+    func makePdrSearchInfo(phase: Int, trajectoryBuffer: [TrajectoryInfo], lengthThreshold: Double) -> SearchInfo {
+        let reqLengthForMajorHeading = lengthThreshold <= 20 ? (lengthThreshold - 5) / 2 : JupiterMode.REQUIRED_LENGTH_FOR_MAJOR_HEADING
+
+        var searchInfo = SearchInfo()
+        if trajectoryBuffer.isEmpty { return searchInfo }
+        
+        let lastIndex = trajectoryBuffer.count-1
+        var userX = trajectoryBuffer[lastIndex].jupiterResult.x
+        var userY = trajectoryBuffer[lastIndex].jupiterResult.y
+        let serverX = trajectoryBuffer[lastIndex].serverResult.x
+        let serverY = trajectoryBuffer[lastIndex].serverResult.y
+
+        let buildingName = trajectoryBuffer[lastIndex].serverResult.building_name
+        let levelName = trajectoryBuffer[lastIndex].serverResult.level_name
+
+        var uvdRawHeading = [Double]()
+        var uvdHeading = [Double]()
+        for value in trajectoryBuffer {
+            uvdRawHeading.append(value.uvd.heading)
+            uvdHeading.append(TJLabsUtilFunctions.shared.compensateDegree(value.uvd.heading))
+        }
+        
+        if (phase < JupiterPhase.PHASE_4) {
+            let paddingValue = JupiterMode.USER_TRAJECTORY_LENGTH_PDR * 0.8
+            let trajLength = calculateTrajectoryLength(trajectoryBuffer: trajectoryBuffer)
+
+            if (phase == JupiterPhase.PHASE_1) {
+                userX = serverX
+                userY = serverY
+            }
+
+            var searchRange = [userX - paddingValue, userY - paddingValue, userX + paddingValue, userY + paddingValue]
+            var searchHeadings = [Double]()
+            if (trajLength > reqLengthForMajorHeading) {
+                let ppHeadings = JupiterPathMatchingCalculator.shared.getPathMatchingHeadings(region: JupiterPathMatchingCalculator.shared.region, sectorId: JupiterPathMatchingCalculator.shared.sectorId, building: buildingName, level: levelName, x: userX, y: userY, paddingValue: paddingValue, mode: .MODE_PEDESTRIAN)
+                let headingLeastChangeSection = extractSectionWithLeastChange(inputArray: uvdRawHeading, requiredSize: EXTRACT_SECTION_RQ_SIZE)
+                if !headingLeastChangeSection.isEmpty {
+                    let headingForCompensation = headingLeastChangeSection.average - uvdRawHeading[0]
+                    for ppHeading in ppHeadings {
+                        let tailHeading = TJLabsUtilFunctions.shared.compensateDegree(ppHeading - headingForCompensation)
+                        searchHeadings.append(tailHeading)
+                    }
+                }
+            }
+
+            searchInfo.tailIndex = trajectoryBuffer[0].uvd.index
+            searchInfo.searchRange = searchRange.map { Int($0) }
+            if !searchHeadings.isEmpty {
+                searchInfo.searchDirection = searchHeadings.map { Int($0) }
+            }
+        } else {
+            //TODO() phase 4 이상인 경우
+        }
+        return searchInfo
+    }
+    
+    func makeDrSearchInfo(phase: Int, trajectoryBuffer: [TrajectoryInfo], lengthThreshold: Double) -> SearchInfo {
+        return SearchInfo()
+    }
+    
     func extractSectionWithLeastChange(inputArray: [Double], requiredSize: Int) -> [Double] {
         var resultArray = [Double]()
         guard inputArray.count > requiredSize else {
@@ -63,19 +123,19 @@ class JupiterTrajectoryCalculator {
         }
     }
     
-    func calculateTrajectoryLength(trajectoryInfo: [TrajectoryInfo]) -> Double {
+    func calculateTrajectoryLength(trajectoryBuffer: [TrajectoryInfo]) -> Double {
         var trajLength = 0.0
-        for unitTraj in trajectoryInfo {
+        for unitTraj in trajectoryBuffer {
             trajLength += unitTraj.uvd.length
         }
         let roundedTrajLength = (trajLength * 1e4).rounded() / 1e4
         return roundedTrajLength
     }
     
-    func calculateAccumulatedDiagonal(trajectoryInfo: [TrajectoryInfo]) -> Double {
+    func calculateAccumulatedDiagonal(trajectoryBuffer: [TrajectoryInfo]) -> Double {
         var trajDiagonal = 0.0
-        if (!trajectoryInfo.isEmpty) {
-            let trajectoryFromHead = calcTrajectoryFromHead(trajectoryInfo: trajectoryInfo)
+        if (!trajectoryBuffer.isEmpty) {
+            let trajectoryFromHead = calcTrajectoryFromHead(trajectoryBuffer: trajectoryBuffer)
             let trajectoryMinMax = getMinMaxValues(for: trajectoryFromHead)
             let dx = trajectoryMinMax[2] - trajectoryMinMax[0]
             let dy = trajectoryMinMax[3] - trajectoryMinMax[1]
@@ -84,24 +144,24 @@ class JupiterTrajectoryCalculator {
         return trajDiagonal
     }
     
-    func calcTrajectoryFromHead(trajectoryInfo: [TrajectoryInfo]) -> [[Double]] {
+    func calcTrajectoryFromHead(trajectoryBuffer: [TrajectoryInfo]) -> [[Double]] {
         var trajectoryFromHead = [[Double]]()
-        if trajectoryInfo.isEmpty {
+        if trajectoryBuffer.isEmpty {
             return trajectoryFromHead
         } else {
-            let startHeading = trajectoryInfo[0].uvd.heading
-            guard let headInfo = trajectoryInfo.last else { return trajectoryFromHead }
+            let startHeading = trajectoryBuffer[0].uvd.heading
+            guard let headInfo = trajectoryBuffer.last else { return trajectoryFromHead }
             var xyFromHead: [Double] = [headInfo.jupiterResult.x, headInfo.jupiterResult.y]
-            var headingFromHead = [Double] (repeating: 0, count: trajectoryInfo.count)
-            for i in 0..<trajectoryInfo.count {
-                headingFromHead[i] = TJLabsUtilFunctions.shared.compensateDegree(trajectoryInfo[i].uvd.heading  - 180 - startHeading)
+            var headingFromHead = [Double] (repeating: 0, count: trajectoryBuffer.count)
+            for i in 0..<trajectoryBuffer.count {
+                headingFromHead[i] = TJLabsUtilFunctions.shared.compensateDegree(trajectoryBuffer[i].uvd.heading  - 180 - startHeading)
             }
             var trajectoryFromHead = [[Double]]()
             trajectoryFromHead.append(xyFromHead)
-            for i in (1..<trajectoryInfo.count).reversed() {
+            for i in (1..<trajectoryBuffer.count).reversed() {
                 let headAngle = TJLabsUtilFunctions.shared.degree2radian(degree: headingFromHead[i])
-                xyFromHead[0] = xyFromHead[0] + trajectoryInfo[i].uvd.length*cos(headAngle)
-                xyFromHead[1] = xyFromHead[1] + trajectoryInfo[i].uvd.length*sin(headAngle)
+                xyFromHead[0] = xyFromHead[0] + trajectoryBuffer[i].uvd.length*cos(headAngle)
+                xyFromHead[1] = xyFromHead[1] + trajectoryBuffer[i].uvd.length*sin(headAngle)
                 trajectoryFromHead.append(xyFromHead)
             }
             return trajectoryFromHead
@@ -166,9 +226,9 @@ class JupiterTrajectoryCalculator {
         return (isSuccess, propagationValues)
     }
     
-    func checkHasMajorDirection(trajectoryInfo: [TrajectoryInfo]) -> Bool {
+    func checkHasMajorDirection(trajectoryBuffer: [TrajectoryInfo]) -> Bool {
         var uvdRawHeading = [Double]()
-        for value in trajectoryInfo {
+        for value in trajectoryBuffer {
             uvdRawHeading.append(value.uvd.heading)
         }
         let headingLeastChangeSection = extractSectionWithLeastChange(inputArray: uvdRawHeading, requiredSize: 7)
