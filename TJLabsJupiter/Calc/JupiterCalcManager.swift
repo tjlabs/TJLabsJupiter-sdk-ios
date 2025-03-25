@@ -110,7 +110,9 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
         )
         
         let key = "\(region)_\(sectorId)_\(buildingName)_\(levelName)"
-        var matchedResult = JupiterPathMatchingCalculator.shared.pathMatching(key: key, result: currentResult, headingRange: JupiterMode.HEADING_RANGE, isUseHeading: true, mode: currentUserMode, paddingValues: JupiterMode.PADDING_VALUES)
+        let paddingValue = currentUserMode == .MODE_PEDESTRIAN ? JupiterMode.PADDING_VALUES_PDR : JupiterMode.PADDING_VALUES_DR
+        
+        var matchedResult = JupiterPathMatchingCalculator.shared.pathMatching(key: key, result: currentResult, headingRange: JupiterMode.HEADING_RANGE, isUseHeading: true, mode: currentUserMode, paddingValues: paddingValue)
         print("(JupiterCalcManager) phase1Check before MM : x = \(currentResult.x), y = \(currentResult.y), h = \(currentResult.absolute_heading)")
         currentResult.x = matchedResult.x
         currentResult.y = matchedResult.y
@@ -204,20 +206,32 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
     }
 
     // MARK: - Calculation Methods
-    private func calcJupiterResult(uvd: UserVelocity) {
+    private func calcJupiterResult(mode: UserMode, uvd: UserVelocity) {
         if JupiterCalcManager.isRouteTrack {
             JupiterCalcManager.currentServerResult = JupiterRouteTracker.shared.startRouteTracking(uvd: uvd, curResult: JupiterCalcManager.currentServerResult)
             print("(CheckRouteTracking) : simul result // x = \(JupiterCalcManager.currentServerResult.x) , y = \(JupiterCalcManager.currentServerResult.y) , h = \(JupiterCalcManager.currentServerResult.absolute_heading)")
         } else {
             if JupiterCalcManager.isVenus {
-                if uvd.index % JupiterMode.RQ_IDX == 0 {
-                    phase1()
+                if mode == .MODE_PEDESTRIAN {
+                    if uvd.index % JupiterMode.RQ_IDX_PDR == 0 {
+                        phase1()
+                    }
+                } else {
+                    if uvd.index % JupiterMode.RQ_IDX_DR == 0 {
+                        phase1()
+                    }
                 }
             } else {
                 switch (JupiterCalcManager.phase) {
                 case 1:
-                    if uvd.index % JupiterMode.RQ_IDX == 0 {
-                        phase1()
+                    if mode == .MODE_PEDESTRIAN {
+                        if uvd.index % JupiterMode.RQ_IDX_PDR == 0 {
+                            phase1()
+                        }
+                    } else {
+                        if uvd.index % JupiterMode.RQ_IDX_DR == 0 {
+                            phase1()
+                        }
                     }
                 case 3:
                     break
@@ -367,7 +381,7 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
         JupiterCalcManager.currentUserMode = mode
         JupiterCalcManager.currentUvd = userVelocity
         uvdStopTimeStamp = 0
-        calcJupiterResult(uvd: userVelocity)
+        calcJupiterResult(mode: mode, uvd: userVelocity)
     }
     func onVelocityResult(_ generator: UVDGenerator, kmPh: Double) {
         JupiterCalcManager.currentVelocity = kmPh
