@@ -10,6 +10,8 @@ class JupiterMode {
     static var USER_TRAJECTORY_LENGTH_DR: Double = 60
     static var USER_TRAJECTORY_LENGTH_PDR: Double = 20
 
+    static var REQUIRED_LENGTH_FOR_MAJOR_HEADING: Double = 10
+    
     static var UVD_INPUT_NUM_GTE_PHASE4_PDR: Int = 6
     static var INDEX_THRESHOLD_GTE_PDR = 21
 
@@ -30,5 +32,7 @@ class JupiterMode {
 
     static var PADDING_VALUES_PDR: [Double] = Array(repeating: PADDING_VALUE_SMALL, count: 4)
     static var PADDING_VALUES_DR: [Double] = Array(repeating: PADDING_VALUE_LARGE, count: 4)
+    
+    static var HEADING_UNCERTANTIY: Double = 2.0
 }
 
