@@ -110,9 +110,8 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
         )
         
         let key = "\(region)_\(sectorId)_\(buildingName)_\(levelName)"
-        let paddingValue = currentUserMode == .MODE_PEDESTRIAN ? JupiterMode.PADDING_VALUES_PDR : JupiterMode.PADDING_VALUES_DR
-        
-        var matchedResult = JupiterPathMatchingCalculator.shared.pathMatching(key: key, result: currentResult, headingRange: JupiterMode.HEADING_RANGE, isUseHeading: true, mode: currentUserMode, paddingValues: paddingValue)
+        let paddingValues = currentUserMode == .MODE_PEDESTRIAN ? JupiterMode.PADDING_VALUES_PDR : JupiterMode.PADDING_VALUES_DR
+        var matchedResult = JupiterPathMatchingCalculator.shared.pathMatching(region: JupiterCalcManager.region, sectorId: JupiterCalcManager.sectorId, building: JupiterCalcManager.currentServerResult.building_name, level: JupiterCalcManager.currentServerResult.level_name, x: JupiterCalcManager.currentServerResult.x, y: JupiterCalcManager.currentServerResult.y, heading: JupiterCalcManager.currentServerResult.absolute_heading, headingRange: JupiterMode.HEADING_RANGE, isUseHeading: true, mode: JupiterCalcManager.currentUserMode, paddingValues: paddingValues)
         print("(JupiterCalcManager) phase1Check before MM : x = \(currentResult.x), y = \(currentResult.y), h = \(currentResult.absolute_heading)")
         currentResult.x = matchedResult.x
         currentResult.y = matchedResult.y
@@ -401,6 +400,8 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
         JupiterCalcManager.isReadyPpResource = isOn
         if isOn {
             if let ppData = data {
+                JupiterPathMatchingCalculator.shared.region = JupiterCalcManager.region
+                JupiterPathMatchingCalculator.shared.sectorId = JupiterCalcManager.sectorId
                 JupiterPathMatchingCalculator.shared.setPathPixelData(key: key, data: ppData)
             }
         }
