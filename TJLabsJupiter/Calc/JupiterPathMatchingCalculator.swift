@@ -102,12 +102,12 @@ class JupiterPathMatchingCalculator {
         return xyhs
     }
     
-    func getPathMatchingHeadings(region: String, building: String, level: String, x: Double, y: Double, paddingValue: Double, mode: UserMode) -> [Double] {
+    func getPathMatchingHeadings(region: String, sectorId: Int, building: String, level: String, x: Double, y: Double, paddingValue: Double, mode: UserMode) -> [Double] {
         var headings: [Double] = []
         let levelCopy: String = TJLabsUtilFunctions.shared.removeLevelDirectionString(levelName: level)
         
         if (!(building.isEmpty) && !(level.isEmpty)) {
-            let key: String = "\(self.sectorId)_\(building)_\(levelCopy)"
+            let key: String = "\(sectorId)_\(building)_\(levelCopy)"
             let checkAvailablePathPixelResult = self.checkIsAvailablePathPixelData(key: key)
             if checkAvailablePathPixelResult.0 {
                 let pathPixelData = checkAvailablePathPixelResult.1
