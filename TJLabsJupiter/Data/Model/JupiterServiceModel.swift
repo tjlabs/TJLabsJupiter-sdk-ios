@@ -11,21 +11,9 @@ public enum JupiterRegion: String {
 
 // MARK: - TrajectoryInfo
 struct TrajectoryInfo {
-    var index: Int = 0
-    var length: Double = 0
-    var heading: Double = 0
-    var velocity: Double = 0
-    var lookingFlag: Bool = false
-    var isIndexChanged: Bool = false
-    var numBleChannels: Int = 0
-    var scc: Double = 0
-    var userBuilding: String = ""
-    var userLevel: String = ""
-    var userX: Double = 0
-    var userY: Double = 0
-    var userHeading: Double = 0
-    var userPmSuccess: Bool = false
-    var userTuHeading: Double = 0
+    var uvd: UserVelocity
+    var jupiterResult: JupiterResult
+    var serverResult: FineLocationTrackingOutput
 }
 
 struct SearchInfo {
