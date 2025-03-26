@@ -2,31 +2,29 @@
 import TJLabsCommon
 
 class JupiterStackManager {
-    private let DR_INFO_BUFFER_SIZE: Int = 60 // 30
-    private let HEADING_BUFFER_SIZE: Int = 5
+    static private let DR_INFO_BUFFER_SIZE: Int = 60 // 30
+    static private let HEADING_BUFFER_SIZE: Int = 5
 
-    private var unitDRInfoBuffer = [UserVelocity]()
-    private var unitDRInfoBufferForPhase4 = [UserVelocity]()
-    private var isNeedClearBuffer: Bool = false
-    private var userMaskBuffer = [UserMask]()
-    private var userUniqueMaskBuffer = [UserMask]()
-    private var userMaskBufferDisplay = [UserMask]()
-    private var userMaskBufferPathTrajMatching = [UserMask]()
-    private var sendFailUvdIndexes = [Int]()
-    private var validIndex: Int = 0
-    private var isNeedRemoveIndexSendFailArray: Bool = false
-    private var headingBufferForCorrection = [Double]()
+    static var unitDRInfoBuffer = [UserVelocity]()
+    static var unitDRInfoBufferForPhase4 = [UserVelocity]()
+    static var isNeedClearBuffer: Bool = false
+    static var userMaskBuffer = [UserMask]()
+    static var userUniqueMaskBuffer = [UserMask]()
+    static var userMaskBufferDisplay = [UserMask]()
+    static var userMaskBufferPathTrajMatching = [UserMask]()
+    static var sendFailUvdIndexes = [Int]()
+    static var validIndex: Int = 0
+    static var isNeedRemoveIndexSendFailArray: Bool = false
+    static var headingBufferForCorrection = [Double]()
     
-    init() { }
-    
-    private func stackUnitDRInfo(unitDRInfo: UserVelocity) {
+    static func stackUnitDRInfo(unitDRInfo: UserVelocity) {
         unitDRInfoBuffer.append(unitDRInfo)
         if (unitDRInfoBuffer.count > DR_INFO_BUFFER_SIZE) {
             unitDRInfoBuffer.remove(at: 0)
         }
     }
 
-    private func stackUnitDRInfoForPhase4(unitDRInfo: UserVelocity, isNeedClear: Bool) {
+    static func stackUnitDRInfoForPhase4(unitDRInfo: UserVelocity, isNeedClear: Bool) {
         if (isNeedClear) {
             unitDRInfoBufferForPhase4 = [UserVelocity]()
             isNeedClearBuffer = false
@@ -34,7 +32,7 @@ class JupiterStackManager {
         unitDRInfoBufferForPhase4.append(unitDRInfo)
     }
 
-    private func stackUserMask(userMask: UserMask) {
+    static func stackUserMask(userMask: UserMask) {
         if (userMaskBuffer.count > 0) {
             let lastIndex = userMaskBuffer.last?.index
             let currentIndex = userMask.index
@@ -49,7 +47,7 @@ class JupiterStackManager {
         }
     }
 
-    private func stackUserUniqueMask(userMask: UserMask) {
+    static func stackUserUniqueMask(userMask: UserMask) {
         if (userUniqueMaskBuffer.count > 0) {
             let lastUserMask = userUniqueMaskBuffer.last
             let lastIndex = lastUserMask?.index
@@ -69,14 +67,14 @@ class JupiterStackManager {
         }
     }
 
-    private func stackUserMaskForDisplay(data: UserMask) {
+    static func stackUserMaskForDisplay(data: UserMask) {
         userMaskBufferDisplay.append(data)
         if (userMaskBufferDisplay.count > 300) {
             userMaskBufferDisplay.remove(at: 0)
         }
     }
 
-    private func stackUserMaskPathTrajMatching(data: UserMask) {
+    static func stackUserMaskPathTrajMatching(data: UserMask) {
         if (userMaskBufferPathTrajMatching.count > 0) {
             let lastIndex = userMaskBufferPathTrajMatching.last?.index
             let currentIndex = data.index
@@ -91,7 +89,7 @@ class JupiterStackManager {
         }
     }
 
-    func stackPostUvdFailData(inputUvd: [UserVelocity]) {
+    static func stackPostUvdFailData(inputUvd: [UserVelocity]) {
         if (isNeedRemoveIndexSendFailArray) {
             let updatedArray = sendFailUvdIndexes.filter { $0 > validIndex }
             sendFailUvdIndexes = updatedArray
@@ -101,7 +99,7 @@ class JupiterStackManager {
         sendFailUvdIndexes = inputUvd.map { $0.index }
     }
 
-    func stackHeadingForCheckCorrection(unitDRInfo: UserVelocity) {
+    static func stackHeadingForCheckCorrection(unitDRInfo: UserVelocity) {
         headingBufferForCorrection.append(unitDRInfo.heading)
         if (headingBufferForCorrection.count > HEADING_BUFFER_SIZE) {
             headingBufferForCorrection.remove(at: 0)
