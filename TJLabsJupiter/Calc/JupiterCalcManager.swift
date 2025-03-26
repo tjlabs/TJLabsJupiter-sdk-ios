@@ -143,56 +143,14 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
             }
             self.osrTimer!.resume()
         }
-        
-        if JupiterSimulator.shared.isSimulationMode {
-            if (self.simulationRfdTimer == nil) {
-                let queue = DispatchQueue(label: Bundle.main.bundleIdentifier! + ".simulationRfdTimer")
-                self.simulationRfdTimer = DispatchSource.makeTimerSource(queue: queue)
-                self.simulationRfdTimer!.schedule(deadline: .now(), repeating: JupiterTime.RFD_INTERVAL)
-                self.simulationRfdTimer!.setEventHandler { [weak self] in
-                    guard let self = self else { return }
-                    self.rfdTimerUpdate()
-                }
-                self.simulationRfdTimer!.resume()
-            }
-            
-            if (self.simulationUvdTimer == nil) {
-                let queue = DispatchQueue(label: Bundle.main.bundleIdentifier! + ".simulationUvdTimer")
-                self.simulationUvdTimer = DispatchSource.makeTimerSource(queue: queue)
-                self.simulationUvdTimer!.schedule(deadline: .now(), repeating: JupiterTime.UVD_INTERVAL)
-                self.simulationUvdTimer!.setEventHandler { [weak self] in
-                    guard let self = self else { return }
-                    self.uvdTimerUpdate()
-                }
-                self.simulationUvdTimer!.resume()
-            }
-        }
     }
     
     func stopTimer() {
         self.osrTimer?.cancel()
         self.osrTimer = nil
-        
-        if JupiterSimulator.shared.isSimulationMode {
-            self.simulationRfdTimer?.cancel()
-            self.simulationRfdTimer = nil
-            
-            self.simulationUvdTimer?.cancel()
-            self.simulationUvdTimer = nil
-        }
     }
     
     private func osrTimerUpdate() {
-        
-    }
-    
-    private func rfdTimerUpdate() {
-        let bleAvg = JupiterSimulator.shared.getSimulationBleData()
-        let rfd = ReceivedForce(user_id: JupiterCalcManager.id, mobile_time: TJLabsUtilFunctions.shared.getCurrentTimeInMilliseconds(), ble: bleAvg, pressure: self.pressure)
-        handleRfd(rfd: rfd)
-    }
-    
-    private func uvdTimerUpdate() {
         
     }
 
@@ -349,9 +307,7 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
     
     // MARK: - RFDGeneratorDelegate Methods
     func onRfdResult(_ generator: TJLabsCommon.RFDGenerator, receivedForce: TJLabsCommon.ReceivedForce) {
-        if !JupiterSimulator.shared.isSimulationMode {
-            handleRfd(rfd: receivedForce)
-        }
+        handleRfd(rfd: receivedForce)
     }
     
     func handleRfd(rfd: ReceivedForce) {
