@@ -67,6 +67,8 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
     static var drBuffer = [UserVelocity]()
     static var headSectionInfo = 0
     
+    private var rfdEmptyMillis: Double = 0
+    
     // MARK: - Static Methods
     static func getJupiterInput() -> FineLocationTrackingInput {
         return FineLocationTrackingInput(user_id: id, mobile_time: TJLabsUtilFunctions.shared.getCurrentTimeInMilliseconds(), sector_id: sectorId, operating_system: os, building_name: buildingName, level_name_list: JupiterBuildingLevelChanager.makeLevelList(sectorId: sectorId, building: buildingName, level: levelName, x: x, y: y, mode: currentUserMode), phase: phase, search_range: searchInfo.searchRange, search_direction_list: searchInfo.searchDirection, normalization_scale: normalizationScale, device_min_rss: Int(deviceMinRss), sc_compensation_list: getScCompensationList(phase: phase), tail_index: searchInfo.tailIndex, head_section_number: headSectionInfo, node_number_list: nodeNumberList, node_index: nodeIndex, retry: retry)
@@ -234,7 +236,7 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
     
     private func calcJupiterResultInStop(time: Double) {
         if !JupiterCalcManager.isPossibleReturnJupiterResult() {
-            if (time - uvdStopTimeStamp >= 2000) {
+            if (time - uvdStopTimeStamp >= 2000 && rfdEmptyMillis <= 10*JupiterTime.SECONDS_TO_MILLIS) {
                 phase1()
                 uvdStopTimeStamp = time
             }
@@ -355,7 +357,12 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
     func handleRfd(rfd: ReceivedForce) {
         sendRfd(rfd: rfd)
         if !JupiterCalcManager.isIndoor && !JupiterCalcManager.isRouteTrack {
-            JupiterCalcManager.isRouteTrack = JupiterRouteTracker.shared.checkStartRouteTrack(bleAvg: rfd.ble, sec: 3)
+            let checkStartRouteTrackResult = JupiterRouteTracker.shared.checkStartRouteTrack(bleAvg: rfd.ble, sec: 3)
+            JupiterCalcManager.isRouteTrack = checkStartRouteTrackResult.0
+            if JupiterCalcManager.isRouteTrack {
+                let key = checkStartRouteTrackResult.1
+                JupiterCalcManager.currentServerResult.building_name = String(key.split(separator: "_")[2])
+            }
         }
         
         if JupiterCalcManager.isRouteTrack {
@@ -378,7 +385,7 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
     }
     
     func onRfdEmptyMillis(_ generator: TJLabsCommon.RFDGenerator, time: Double) {
-        //
+        rfdEmptyMillis = time
     }
     
     // MARK: - UVDGeneratorDelegate Methods
