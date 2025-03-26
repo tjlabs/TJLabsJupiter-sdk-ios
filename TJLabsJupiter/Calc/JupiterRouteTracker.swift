@@ -40,7 +40,7 @@ class JupiterRouteTracker {
         }
     }
     
-    func checkStartRouteTrack(bleAvg: [String: Double], sec: Double) -> Bool {
+    func checkStartRouteTrack(bleAvg: [String: Double], sec: Double) -> (Bool, String) {
         var check: Bool = false
         if entranceRoute.isEmpty {
             currentEntranceKey = ""
@@ -76,7 +76,7 @@ class JupiterRouteTracker {
         }
         print("(CheckRouteTracking) : check = \(check)")
         
-        return check
+        return (check, currentEntranceKey)
     }
     
     func startRouteTracking(uvd: UserVelocity, curResult: FineLocationTrackingOutput) -> FineLocationTrackingOutput {
