@@ -88,7 +88,6 @@ public class JupiterManager {
             self.jupiterCalcMananger?.setSendUvdLength(self.sendUvdLength)
             self.startGenerator(mode: mode, completion: { [self] isSuccess, msg in
                 if isSuccess {
-                    JupiterFileManager.shared.setRegion(region: region)
                     self.startTimer()
                     self.delegate?.onJupiterSuccess(true)
                 } else {
@@ -124,7 +123,7 @@ public class JupiterManager {
         stopGenerator()
     }
     
-    public func setSimulationMode(flag: Bool, bleFileName: String = "", sensorFileName: String = "") {
+    public func setSimulationMode(flag: Bool, bleFileName: String, sensorFileName: String) {
         JupiterSimulator.shared.setSimulationMode(flag: flag, bleFileName: bleFileName, sensorFileName: sensorFileName)
     }
     
