@@ -40,7 +40,7 @@ class JupiterRouteTracker {
         }
     }
     
-    func checkStartRouteTrack(bleAvg: [String: Double], sec: Double) -> Bool {
+    func checkStartRouteTrack(bleAvg: [String: Double], sec: Double) -> (Bool, String) {
         var check: Bool = false
         if entranceRoute.isEmpty {
             currentEntranceKey = ""
@@ -76,7 +76,7 @@ class JupiterRouteTracker {
         }
         print("(CheckRouteTracking) : check = \(check)")
         
-        return check
+        return (check, currentEntranceKey)
     }
     
     func startRouteTracking(uvd: UserVelocity, curResult: FineLocationTrackingOutput) -> FineLocationTrackingOutput {
@@ -123,6 +123,7 @@ class JupiterRouteTracker {
                         result.x = wardCoord.x
                         result.y = wardCoord.y
                         result.absolute_heading = wardCoord.heading
+                        result.level_name = getRouteTrackEndLevel()
                         print("(CheckRouteTracking) stopRouteTracking : normalizedRSSI = \(normalizedRSSI) // thresholdRSSI = \(thresholdRSSI)")
                         return normalizedRSSI >= thresholdRSSI ? (true, result) : (false, result)
                     } else {
@@ -154,6 +155,17 @@ class JupiterRouteTracker {
             }
         }
         return false
+    }
+    
+    private func getRouteTrackEndLevel() -> String {
+        if let entranceRouteData = entranceRoute[currentEntranceKey] {
+            let entraneRouteLevel = entranceRouteData.routeLevel
+            if !entraneRouteLevel.isEmpty {
+                let levelName = entraneRouteLevel[entraneRouteLevel.count-1]
+                return levelName
+            }
+        }
+        return ""
     }
 
 }
