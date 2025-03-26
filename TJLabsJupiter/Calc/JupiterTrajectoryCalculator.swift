@@ -2,12 +2,10 @@
 import TJLabsCommon
 
 class JupiterTrajectoryCalculator {
-    init() { }
+    private static var trajectoryBuffer = [TrajectoryInfo]()
+    private static let EXTRACT_SECTION_RQ_SIZE = 7
     
-    private var trajectoryBuffer = [TrajectoryInfo]()
-    private let EXTRACT_SECTION_RQ_SIZE = 7
-    
-    func updateTrajectoryBuffer(mode: UserMode, uvd: UserVelocity, jupiterResult: JupiterResult, serverResult: FineLocationTrackingOutput) -> [TrajectoryInfo] {
+    static func updateTrajectoryBuffer(mode: UserMode, uvd: UserVelocity, jupiterResult: JupiterResult, serverResult: FineLocationTrackingOutput) -> [TrajectoryInfo] {
         let trajectoryInfo = TrajectoryInfo(uvd: uvd, jupiterResult: jupiterResult, serverResult: serverResult)
         trajectoryBuffer.append(trajectoryInfo)
         
@@ -30,7 +28,7 @@ class JupiterTrajectoryCalculator {
         return trajectoryBuffer
     }
     
-    func makePdrSearchInfo(phase: Int, trajectoryBuffer: [TrajectoryInfo], lengthThreshold: Double) -> SearchInfo {
+    static func makePdrSearchInfo(phase: Int, trajectoryBuffer: [TrajectoryInfo], lengthThreshold: Double) -> SearchInfo {
         let reqLengthForMajorHeading = lengthThreshold <= 20 ? (lengthThreshold - 5) / 2 : JupiterMode.REQUIRED_LENGTH_FOR_MAJOR_HEADING
 
         var searchInfo = SearchInfo()
@@ -86,11 +84,11 @@ class JupiterTrajectoryCalculator {
         return searchInfo
     }
     
-    func makeDrSearchInfo(phase: Int, trajectoryBuffer: [TrajectoryInfo], lengthThreshold: Double) -> SearchInfo {
+    static func makeDrSearchInfo(phase: Int, trajectoryBuffer: [TrajectoryInfo], lengthThreshold: Double) -> SearchInfo {
         return SearchInfo()
     }
     
-    func extractSectionWithLeastChange(inputArray: [Double], requiredSize: Int) -> [Double] {
+    static func extractSectionWithLeastChange(inputArray: [Double], requiredSize: Int) -> [Double] {
         var resultArray = [Double]()
         guard inputArray.count > requiredSize else {
             return []
@@ -123,7 +121,7 @@ class JupiterTrajectoryCalculator {
         }
     }
     
-    func calculateTrajectoryLength(trajectoryBuffer: [TrajectoryInfo]) -> Double {
+    static func calculateTrajectoryLength(trajectoryBuffer: [TrajectoryInfo]) -> Double {
         var trajLength = 0.0
         for unitTraj in trajectoryBuffer {
             trajLength += unitTraj.uvd.length
@@ -132,7 +130,7 @@ class JupiterTrajectoryCalculator {
         return roundedTrajLength
     }
     
-    func calculateAccumulatedDiagonal(trajectoryBuffer: [TrajectoryInfo]) -> Double {
+    static func calculateAccumulatedDiagonal(trajectoryBuffer: [TrajectoryInfo]) -> Double {
         var trajDiagonal = 0.0
         if (!trajectoryBuffer.isEmpty) {
             let trajectoryFromHead = calcTrajectoryFromHead(trajectoryBuffer: trajectoryBuffer)
@@ -144,7 +142,7 @@ class JupiterTrajectoryCalculator {
         return trajDiagonal
     }
     
-    func calcTrajectoryFromHead(trajectoryBuffer: [TrajectoryInfo]) -> [[Double]] {
+    static func calcTrajectoryFromHead(trajectoryBuffer: [TrajectoryInfo]) -> [[Double]] {
         var trajectoryFromHead = [[Double]]()
         if trajectoryBuffer.isEmpty {
             return trajectoryFromHead
@@ -168,7 +166,7 @@ class JupiterTrajectoryCalculator {
         }
     }
     
-    func getMinMaxValues(for array: [[Double]]) -> [Double] {
+    static func getMinMaxValues(for array: [[Double]]) -> [Double] {
         guard !array.isEmpty else {
             return []
         }
@@ -188,7 +186,7 @@ class JupiterTrajectoryCalculator {
         return [xMin, yMin, xMax, yMax]
     }
     
-    func propagateUsingUvd(unitDRInfoBuffer: [UserVelocity], fltResult: FineLocationTrackingOutput) -> (Bool, xyhs) {
+    static func propagateUsingUvd(unitDRInfoBuffer: [UserVelocity], fltResult: FineLocationTrackingOutput) -> (Bool, xyhs) {
         var isSuccess: Bool = false
         var propagationValues = xyhs()
         let resultIndex = fltResult.index
@@ -226,7 +224,7 @@ class JupiterTrajectoryCalculator {
         return (isSuccess, propagationValues)
     }
     
-    func checkHasMajorDirection(trajectoryBuffer: [TrajectoryInfo]) -> Bool {
+    static func checkHasMajorDirection(trajectoryBuffer: [TrajectoryInfo]) -> Bool {
         var uvdRawHeading = [Double]()
         for value in trajectoryBuffer {
             uvdRawHeading.append(value.uvd.heading)

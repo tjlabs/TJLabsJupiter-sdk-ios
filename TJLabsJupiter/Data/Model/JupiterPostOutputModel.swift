@@ -11,7 +11,7 @@ struct JupiterCalculatorResults {
 
 
 // MARK: - FineLocationTracking
-public struct FineLocationTrackingOutput: Codable {
+public struct FineLocationTrackingOutput: Codable, Equatable {
     public var mobile_time: Int
     public var building_name: String
     public var level_name: String

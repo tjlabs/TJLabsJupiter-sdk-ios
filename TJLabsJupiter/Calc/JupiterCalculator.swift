@@ -1,7 +1,6 @@
 
 class JupiterCalculator {
     static func calculatePhase1(input: FineLocationTrackingInput, completion: @escaping (JupiterCalculatorResults) -> Void) {
-        
         let postInput = FLT(fltInput: input, trajInfoList: [], searchInfo: SearchInfo())
         JupiterNetworkManager.shared.postFLT(url: JupiterNetworkConstants.getCalcFltURL(), input: postInput, completion: { statusCode, returnedString, input in
             var output = JupiterCalculatorResults(fltResultList: [], fltInput: postInput.fltInput, inputTrajectoryInfo: postInput.trajInfoList, inputSearchInfo: postInput.searchInfo)
@@ -19,8 +18,24 @@ class JupiterCalculator {
         })
     }
     
-    static func calculatePhase3(input: FineLocationTrackingInput, completion: @escaping (JupiterCalculatorResults) -> Void) {
-        
+    static func calculatePhase3(input: FineLocationTrackingInput, trajectoryBuffer: [TrajectoryInfo], searchInfo: SearchInfo, completion: @escaping (JupiterCalculatorResults) -> Void) {
+        let postInput = FLT(fltInput: input, trajInfoList: trajectoryBuffer, searchInfo: searchInfo)
+        print("(CheckJupiter) Phase3 Input : \(postInput)")
+        JupiterNetworkManager.shared.postFLT(url: JupiterNetworkConstants.getCalcFltURL(), input: postInput, completion: { statusCode, returnedString, input in
+            print("(CheckJupiter) Phase3 Output : \(statusCode) // \(returnedString)")
+            var output = JupiterCalculatorResults(fltResultList: [], fltInput: postInput.fltInput, inputTrajectoryInfo: postInput.trajInfoList, inputSearchInfo: postInput.searchInfo)
+            if statusCode == 200 {
+                let decoded = decodeFineLocationTrackingOutputList(jsonString: returnedString)
+                if decoded.0 {
+                    output.fltResultList = decoded.1.flt_outputs
+                    completion(output)
+                } else {
+                    
+                }
+            } else {
+                
+            }
+        })
     }
     
     static func calculatePhase5(input: FineLocationTrackingInput, completion: @escaping (JupiterCalculatorResults) -> Void) {
