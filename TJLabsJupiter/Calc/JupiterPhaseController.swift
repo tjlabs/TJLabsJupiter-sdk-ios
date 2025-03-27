@@ -17,7 +17,8 @@ class JupiterPhaseController {
             } else {
                 let rqIndex = mode == .MODE_VEHICLE ? JupiterMode.RQ_IDX_DR : JupiterMode.RQ_IDX_PDR
                 let hasMajorHeading = JupiterTrajectoryCalculator.checkHasMajorDirection(trajectoryBuffer: trajectoryBuffer)
-                _ = checkScResultConnectionForStable(inputPhase: inputPhase, curResult: curResult, preResult: preResult, drBuffer: drBuffer, hasMajorDirection: hasMajorHeading, INDEX_THRESHOLD: rqIndex, mode: mode)
+                let updatedPhase = checkScResultConnectionForStable(inputPhase: inputPhase, curResult: curResult, preResult: preResult, drBuffer: drBuffer, hasMajorDirection: hasMajorHeading, INDEX_THRESHOLD: rqIndex, mode: mode)
+                phase = updatedPhase
             }
         case 5:
             phase = self.phaseControlInStable(serverResult: curResult, mode: mode, inputPhase: 6)
