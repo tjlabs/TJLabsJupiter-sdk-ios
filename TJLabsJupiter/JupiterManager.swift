@@ -81,6 +81,7 @@ public class JupiterManager {
         ]
         
         performTasksWithCounter(tasks: tasks, onComplete: {
+            JupiterFileManager.shared.set(region: region, sectorId: sectorId, deviceModel: self.deviceModel, osVersion: self.deviceOsVersion)
             self.isStartService = true
             JupiterNetworkConstants.setServerURL(region: region)
             self.jupiterCalcMananger = .init(region: region, id: self.id, sectorId: sectorId)
@@ -121,6 +122,7 @@ public class JupiterManager {
     public func stopJupiter() {
         stopTimer()
         stopGenerator()
+        JupiterFileManager.shared.initalize()
         JupiterSimulator.shared.initailize()
     }
     
