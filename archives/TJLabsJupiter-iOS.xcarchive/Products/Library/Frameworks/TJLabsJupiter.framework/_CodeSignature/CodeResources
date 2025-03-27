@@ -10,7 +10,7 @@
 		</data>
 		<key>Frameworks/TJLabsCommon.framework/TJLabsCommon</key>
 		<data>
-		EKrGSfbM3n+wxh6aykvISzWF88M=
+		Ush8P2u3Kf1a5WLV/fcPRhjQ4C4=
 		</data>
 		<key>Frameworks/TJLabsCommon.framework/_CodeSignature/CodeResources</key>
 		<data>
@@ -22,7 +22,7 @@
 		</data>
 		<key>Frameworks/TJLabsResource.framework/TJLabsResource</key>
 		<data>
-		h4G3PNPJ0Ew5P/DgfZ/RfCCgAww=
+		/98lvNm3UjzJLOwA3bCgLDZ8HBU=
 		</data>
 		<key>Frameworks/TJLabsResource.framework/_CodeSignature/CodeResources</key>
 		<data>
@@ -38,7 +38,7 @@
 		</data>
 		<key>Modules/TJLabsJupiter.swiftmodule/arm64-apple-ios.abi.json</key>
 		<data>
-		hbDws2bp6Ikj2gDtirNp7N7gh9A=
+		SaHtnqRwpKzs1FidqzE8N+RXc5I=
 		</data>
 		<key>Modules/TJLabsJupiter.swiftmodule/arm64-apple-ios.private.swiftinterface</key>
 		<data>
@@ -74,7 +74,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			Cl3WTotWFGnvPZd8YAc1EiAS+LR7S2niyoCa/naDBTY=
+			VjWsjc9lS+h/vRGHa3XmOdid8FROFHeM2ypYjAGA7TA=
 			</data>
 		</dict>
 		<key>Frameworks/TJLabsCommon.framework/_CodeSignature/CodeResources</key>
@@ -95,7 +95,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			CezmJih2MPce4LAnXBReOkdQJllF6oIJQB/Ya2a8fMI=
+			dobuyx2YKfraNDy+boS0IWtHqu4jHUqv4q4CK1Wq4Pk=
 			</data>
 		</dict>
 		<key>Frameworks/TJLabsResource.framework/_CodeSignature/CodeResources</key>
@@ -116,7 +116,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			nIXMLnaT2pjP7vvUMzVUANDxo7GTXlCxN8XS6y8d5iw=
+			yniVTTPBERuKLeLyOl5wvE7quk7CcBbrJXOFqY3jxuc=
 			</data>
 		</dict>
 		<key>Modules/TJLabsJupiter.swiftmodule/arm64-apple-ios.private.swiftinterface</key>
