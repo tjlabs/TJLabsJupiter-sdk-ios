@@ -3,14 +3,14 @@
 <plist version="1.0">
 <dict>
 	<key>bundleIndentifier</key>
-	<string>TJLabsCommon</string>
+	<string>TJLabsResource</string>
 	<key>cdhashes</key>
 	<array>
 		<data>
-		fsjupZ1vKN6flpBKodAbnbvavbw=
+		oaQiZb0Axwd5GzatyXGaETrH3XQ=
 		</data>
 		<data>
-		Y74eCEV7Zi/ERva2LjeXaRS5RJ0=
+		+mvtDhtjhHHf+wGca3b+boFtYiM=
 		</data>
 	</array>
 	<key>certificates</key>
@@ -112,7 +112,7 @@
 	<key>metadata</key>
 	<dict>
 		<key>library</key>
-		<string>TJLabsCommon.framework</string>
+		<string>TJLabsResource.framework</string>
 		<key>platform</key>
 		<string>ios</string>
 	</dict>

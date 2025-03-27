@@ -1,30 +1,31 @@
 // swift-interface-format-version: 1.0
-// swift-compiler-version: Apple Swift version 6.0.2 effective-5.10 (swiftlang-6.0.2.1.2 clang-1600.0.26.4)
+// swift-compiler-version: Apple Swift version 6.0.3 effective-5.10 (swiftlang-6.0.3.1.10 clang-1600.0.30.1)
 // swift-module-flags: -target arm64-apple-ios15.6 -enable-objc-interop -enable-library-evolution -swift-version 5 -enforce-exclusivity=checked -O -enable-bare-slash-regex -module-name TJLabsJupiter
 import Foundation
 import Swift
 import SystemConfiguration
 import TJLabsCommon
 @_exported import TJLabsJupiter
+import TJLabsResource
 import UIKit
 import _Concurrency
 import _StringProcessing
 import _SwiftConcurrencyShims
-public class JupiterManager : TJLabsCommon.RFDGeneratorDelegate, TJLabsCommon.UVDGeneratorDelegate {
-  public static let sdkVersion: Swift.String
-  weak public var delegate: (any TJLabsJupiter.JupiterManagerDelegate)?
-  public init(id: Swift.String)
-  public func startJupiter(region: TJLabsJupiter.JupiterRegion = .KOREA, sectorId: Swift.Int)
-  public func stopJupiter()
-  public func setSendRfdLength(_ length: Swift.Int = 2)
-  public func setSendUvdLength(_ length: Swift.Int = 4)
-  public func onRfdError(_ generator: TJLabsCommon.RFDGenerator, code: Swift.Int, msg: Swift.String)
-  public func onRfdResult(_ generator: TJLabsCommon.RFDGenerator, receivedForce: TJLabsCommon.ReceivedForce)
-  public func onPressureResult(_ generator: TJLabsCommon.UVDGenerator, hPa: Swift.Double)
-  public func onUvdResult(_ generator: TJLabsCommon.UVDGenerator, mode: TJLabsCommon.UserMode, userVelocity: TJLabsCommon.UserVelocity)
-  public func onUvdError(_ generator: TJLabsCommon.UVDGenerator, error: Swift.String)
-  public func onUvdPauseMillis(_ generator: TJLabsCommon.UVDGenerator, time: Swift.Double)
-  public func onVelocityResult(_ generator: TJLabsCommon.UVDGenerator, kmPh: Swift.Double)
+@_hasMissingDesignatedInitializers public class JupiterNetworkConstants {
+  public static func setServerURL(region: Swift.String)
+  public static func getUserBaseURL() -> Swift.String
+  public static func getRecBaseURL() -> Swift.String
+  public static func getCalcBaseURL() -> Swift.String
+  public static func getClientBaseURL() -> Swift.String
+  public static func getUserLoginVersion() -> Swift.String
+  public static func getRecRfdServerVersion() -> Swift.String
+  public static func getRecUvdServerVersion() -> Swift.String
+  public static func getUserLoginURL() -> Swift.String
+  public static func getRecRfdURL() -> Swift.String
+  public static func getRecUvdURL() -> Swift.String
+  public static func getCalcFltURL() -> Swift.String
+  public static func getCalcOsrURL() -> Swift.String
+  public static func getClientBlacklistURL() -> Swift.String
   @objc deinit
 }
 public struct LoginInput : Swift.Codable {
@@ -35,53 +36,37 @@ public struct LoginInput : Swift.Codable {
   public func encode(to encoder: any Swift.Encoder) throws
   public init(from decoder: any Swift.Decoder) throws
 }
-public enum JupiterRegion {
-  case KOREA, US, CANADA
-  public static func == (a: TJLabsJupiter.JupiterRegion, b: TJLabsJupiter.JupiterRegion) -> Swift.Bool
-  public func hash(into hasher: inout Swift.Hasher)
-  public var hashValue: Swift.Int {
-    get
-  }
-}
-public struct TrajectoryInfo {
-  public var index: Swift.Int
-  public var length: Swift.Double
-  public var heading: Swift.Double
-  public var velocity: Swift.Double
-  public var lookingFlag: Swift.Bool
-  public var isIndexChanged: Swift.Bool
-  public var numBleChannels: Swift.Int
-  public var scc: Swift.Double
-  public var userBuilding: Swift.String
-  public var userLevel: Swift.String
-  public var userX: Swift.Double
-  public var userY: Swift.Double
-  public var userHeading: Swift.Double
-  public var userPmSuccess: Swift.Bool
-  public var userTuHeading: Swift.Double
-}
-public enum TrajType {
-  case DR_UNKNOWN, DR_IN_PHASE3, DR_ALL_STRAIGHT, DR_HEAD_STRAIGHT, DR_TAIL_STRAIGHT, DR_RQ_IN_PHASE2, DR_NO_RQ_IN_PHASE2, PDR_IN_PHASE3_HAS_MAJOR_DIR, PDR_IN_PHASE3_NO_MAJOR_DIR, PDR_IN_PHASE4_HAS_MAJOR_DIR, PDR_IN_PHASE4_NO_MAJOR_DIR, PDR_IN_PHASE4_ABNORMAL
-  public static func == (a: TJLabsJupiter.TrajType, b: TJLabsJupiter.TrajType) -> Swift.Bool
-  public func hash(into hasher: inout Swift.Hasher)
-  public var hashValue: Swift.Int {
-    get
-  }
-}
-public struct SearchInfo {
-  public var searchRange: [Swift.Int]
-  public var searchArea: [[Swift.Double]]
-  public var searchDirection: [Swift.Int]
-  public var tailIndex: Swift.Int
-  public var trajShape: [[Swift.Double]]
-  public var trajStartCoord: [Swift.Double]
-  public var trajType: TJLabsJupiter.TrajType
-  public var trajLength: Swift.Double
-}
 public struct FineLocationTrackingInput : Swift.Encodable {
   public func encode(to encoder: any Swift.Encoder) throws
 }
-public struct FineLocationTrackingOutput : Swift.Codable {
+public struct MobileResult : Swift.Encodable {
+  public var user_id: Swift.String
+  public var mobile_time: Swift.Int
+  public var sector_id: Swift.Int
+  public var building_name: Swift.String
+  public var level_name: Swift.String
+  public var scc: Swift.Double
+  public var x: Swift.Double
+  public var y: Swift.Double
+  public var absolute_heading: Swift.Double
+  public var phase: Swift.Int
+  public var calculated_time: Swift.Double
+  public var index: Swift.Int
+  public var velocity: Swift.Double
+  public var ble_only_position: Swift.Bool
+  public var normalization_scale: Swift.Double
+  public var device_min_rss: Swift.Int
+  public var sc_compensation: Swift.Double
+  public var is_indoor: Swift.Bool
+  public func encode(to encoder: any Swift.Encoder) throws
+}
+public struct MobileReport : Swift.Encodable {
+  public var user_id: Swift.String
+  public var mobile_time: Swift.Int
+  public var report: Swift.Int
+  public func encode(to encoder: any Swift.Encoder) throws
+}
+public struct FineLocationTrackingOutput : Swift.Codable, Swift.Equatable {
   public var mobile_time: Swift.Int
   public var building_name: Swift.String
   public var level_name: Swift.String
@@ -97,6 +82,7 @@ public struct FineLocationTrackingOutput : Swift.Codable {
   public var cumulative_length: Swift.Double
   public var channel_condition: Swift.Bool
   public init()
+  public static func == (a: TJLabsJupiter.FineLocationTrackingOutput, b: TJLabsJupiter.FineLocationTrackingOutput) -> Swift.Bool
   public func encode(to encoder: any Swift.Encoder) throws
   public init(from decoder: any Swift.Decoder) throws
 }
@@ -104,6 +90,46 @@ public struct FineLocationTrackingOutputList : Swift.Codable {
   public var flt_outputs: [TJLabsJupiter.FineLocationTrackingOutput]
   public func encode(to encoder: any Swift.Encoder) throws
   public init(from decoder: any Swift.Decoder) throws
+}
+public struct OnSpotRecognitionOutput : Swift.Codable {
+  public var mobile_time: Swift.Int
+  public var building_name: Swift.String
+  public var level_name: Swift.String
+  public var linked_level_name: Swift.String
+  public var spot_id: Swift.Int
+  public var spot_distance: Swift.Double
+  public var spot_range: [Swift.Int]
+  public var spot_direction_down: [Swift.Int]
+  public var spot_direction_up: [Swift.Int]
+  public init()
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct RcInfo : Swift.Codable {
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct RcInfoOutputList : Swift.Codable {
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct BlackListDevices : Swift.Codable {
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct IOSSupport : Swift.Codable {
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public enum JupiterRegion : Swift.String {
+  case KOREA
+  case US_EAST
+  case CANADA
+  public init?(rawValue: Swift.String)
+  public typealias RawValue = Swift.String
+  public var rawValue: Swift.String {
+    get
+  }
 }
 public struct JupiterResult : Swift.Codable {
   public var mobile_time: Swift.Int
@@ -126,41 +152,21 @@ public struct JupiterResult : Swift.Codable {
   public init(from decoder: any Swift.Decoder) throws
 }
 public protocol JupiterManagerDelegate : AnyObject {
-  func onJupiterResult(_ result: TJLabsJupiter.JupiterResult)
+  func onJupiterSuccess(_ isSuccess: Swift.Bool)
   func onJupiterError(_ code: Swift.Int, _ msg: Swift.String)
+  func onJupiterResult(_ result: TJLabsJupiter.JupiterResult)
 }
-@_hasMissingDesignatedInitializers public class JupiterNetworkConstants {
-  public static func setServerURL(region: TJLabsJupiter.JupiterRegion)
-  public static func getUserBaseURL() -> Swift.String
-  public static func getRecBaseURL() -> Swift.String
-  public static func getCalcBaseURL() -> Swift.String
-  public static func getUserLoginVersion() -> Swift.String
-  public static func getRecRfdServerVersion() -> Swift.String
-  public static func getRecUvdServerVersion() -> Swift.String
-  public static func getUserLoginURL() -> Swift.String
-  public static func getRecRfdURL() -> Swift.String
-  public static func getRecUvdURL() -> Swift.String
-  public static func getCalcFltURL() -> Swift.String
-  @objc deinit
-}
-@_hasMissingDesignatedInitializers public class SharedRFDGeneratorDelegate : TJLabsCommon.RFDGeneratorDelegate {
-  public var listeners: [any TJLabsCommon.RFDGeneratorDelegate]
-  public func addListener(_ listener: any TJLabsCommon.RFDGeneratorDelegate)
-  public func onRfdResult(_ generator: TJLabsCommon.RFDGenerator, receivedForce: TJLabsCommon.ReceivedForce)
-  public func onRfdError(_ generator: TJLabsCommon.RFDGenerator, code: Swift.Int, msg: Swift.String)
-  @objc deinit
-}
-@_hasMissingDesignatedInitializers public class SharedUVDGeneratorDelegate : TJLabsCommon.UVDGeneratorDelegate {
-  public var listeners: [any TJLabsCommon.UVDGeneratorDelegate]
-  public func addListener(_ listener: any TJLabsCommon.UVDGeneratorDelegate)
-  public func onUvdResult(_ generator: TJLabsCommon.UVDGenerator, mode: TJLabsCommon.UserMode, userVelocity: TJLabsCommon.UserVelocity)
-  public func onPressureResult(_ generator: TJLabsCommon.UVDGenerator, hPa: Swift.Double)
-  public func onVelocityResult(_ generator: TJLabsCommon.UVDGenerator, kmPh: Swift.Double)
-  public func onUvdPauseMillis(_ generator: TJLabsCommon.UVDGenerator, time: Swift.Double)
-  public func onUvdError(_ generator: TJLabsCommon.UVDGenerator, error: Swift.String)
+public class JupiterManager {
+  public static let sdkVersion: Swift.String
+  weak public var delegate: (any TJLabsJupiter.JupiterManagerDelegate)?
+  public init(id: Swift.String)
+  public func startJupiter(region: Swift.String = JupiterRegion.KOREA.rawValue, sectorId: Swift.Int, mode: TJLabsCommon.UserMode)
+  public func stopJupiter()
+  public func setSimulationMode(flag: Swift.Bool, bleFileName: Swift.String, sensorFileName: Swift.String)
+  public func checkServiceAvailableDevice(completion: @escaping (Swift.Bool) -> Swift.Void)
+  public func decodeBlackListDevices(from jsonString: Swift.String) -> TJLabsJupiter.BlackListDevices?
   @objc deinit
 }
 extension TJLabsJupiter.JupiterRegion : Swift.Equatable {}
 extension TJLabsJupiter.JupiterRegion : Swift.Hashable {}
-extension TJLabsJupiter.TrajType : Swift.Equatable {}
-extension TJLabsJupiter.TrajType : Swift.Hashable {}
+extension TJLabsJupiter.JupiterRegion : Swift.RawRepresentable {}
