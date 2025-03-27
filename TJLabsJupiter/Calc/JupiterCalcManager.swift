@@ -254,6 +254,7 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
         selectedResult.absolute_heading = pmXyhs.heading
         
         let updatedPhase = JupiterPhaseController.controlPhase(inputPhase: JupiterCalcManager.phase, curResult: JupiterCalcManager.currentServerResult, preResult: JupiterCalcManager.preServerResult, trajectoryBuffer: jupiterCalculatorResults.inputTrajectoryInfo, drBuffer: JupiterStackManager.unitDRInfoBuffer, mode: JupiterCalcManager.currentUserMode)
+        JupiterCalcManager.phase = updatedPhase
         
         if !JupiterCalcManager.isActiveKf && JupiterCalcManager.phase == JupiterPhase.PHASE_6 {
             JupiterCalcManager.isActiveKf = true
