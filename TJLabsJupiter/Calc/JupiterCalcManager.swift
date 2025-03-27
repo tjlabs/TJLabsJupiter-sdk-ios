@@ -173,6 +173,10 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
                     phase1()
                 }
             } else {
+                if JupiterCalcManager.isActiveKf {
+                    updateResultFromTimeUpdate(mode: mode, uvd: uvd, pastUvd: JupiterCalcManager.pastUvd)
+                }
+                
                 let trajectoryBuffer = JupiterTrajectoryCalculator.updateTrajectoryBuffer(mode: mode, uvd: uvd, jupiterResult: JupiterCalcManager.getJupiterResult(), serverResult: JupiterCalcManager.currentServerResult)
                 let searchInfo = mode == .MODE_VEHICLE ? JupiterTrajectoryCalculator.makeDrSearchInfo(phase: JupiterCalcManager.phase, trajectoryBuffer: trajectoryBuffer, lengthThreshold: JupiterMode.USER_TRAJECTORY_LENGTH_DR) : JupiterTrajectoryCalculator.makePdrSearchInfo(phase: JupiterCalcManager.phase, trajectoryBuffer: trajectoryBuffer, lengthThreshold: JupiterMode.USER_TRAJECTORY_LENGTH_PDR)
                 print("(CheckJupiter) : serachInfo = \(searchInfo) , phase = \(JupiterCalcManager.phase)")
@@ -196,6 +200,7 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
                 }
             }
         }
+        JupiterCalcManager.pastUvd = uvd
     }
     
     private func calcJupiterResultInStop(time: Double) {
