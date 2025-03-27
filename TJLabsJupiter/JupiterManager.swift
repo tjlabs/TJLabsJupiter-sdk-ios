@@ -121,6 +121,7 @@ public class JupiterManager {
     public func stopJupiter() {
         stopTimer()
         stopGenerator()
+        JupiterSimulator.shared.initailize()
     }
     
     public func setSimulationMode(flag: Bool, bleFileName: String, sensorFileName: String) {
