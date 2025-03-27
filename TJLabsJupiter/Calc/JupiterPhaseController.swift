@@ -121,8 +121,8 @@ class JupiterPhaseController {
 
                         let levelName = TJLabsUtilFunctions.shared.removeLevelDirectionString(levelName: curResult.level_name)
                         let paddingValues = mode == .MODE_VEHICLE ? JupiterMode.PADDING_VALUES_DR : JupiterMode.PADDING_VALUES_PDR
-                        let pathMatchingResult = JupiterPathMatchingCalculator.shared.pathMatching(region: JupiterPathMatchingCalculator.shared.region, sectorId: JupiterPathMatchingCalculator.shared.sectorId, building: curResult.building_name, level: levelName, x: propagatedXyh[0], y: propagatedXyh[1], heading: propagatedXyh[2], headingRange: JupiterMode.HEADING_RANGE, isUseHeading: false, mode: mode, paddingValues: paddingValues)
-
+                        let pmResults = JupiterPathMatchingCalculator.shared.pathMatching(region: JupiterPathMatchingCalculator.shared.region, sectorId: JupiterPathMatchingCalculator.shared.sectorId, building: curResult.building_name, level: levelName, x: propagatedXyh[0], y: propagatedXyh[1], heading: propagatedXyh[2], headingRange: JupiterMode.HEADING_RANGE, isUseHeading: false, mode: mode, paddingValues: paddingValues)
+                        let pathMatchingResult = pmResults.1
                         let diffX = abs(pathMatchingResult.x - curResult.x)
                         let diffY = abs(pathMatchingResult.y - curResult.y)
                         let currentResultHeading = TJLabsUtilFunctions.shared.compensateDegree(curResult.absolute_heading)
