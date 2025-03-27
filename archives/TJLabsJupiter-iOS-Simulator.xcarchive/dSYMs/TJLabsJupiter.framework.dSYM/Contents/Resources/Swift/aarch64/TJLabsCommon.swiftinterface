@@ -1,5 +1,5 @@
 // swift-interface-format-version: 1.0
-// swift-compiler-version: Apple Swift version 6.0.2 effective-5.10 (swiftlang-6.0.2.1.2 clang-1600.0.26.4)
+// swift-compiler-version: Apple Swift version 6.0.3 effective-5.10 (swiftlang-6.0.3.1.10 clang-1600.0.30.1)
 // swift-module-flags: -target arm64-apple-ios18.1-simulator -enable-objc-interop -enable-library-evolution -swift-version 5 -enforce-exclusivity=checked -O -enable-bare-slash-regex -module-name TJLabsCommon
 import CoreBluetooth
 import CoreLocation
@@ -24,6 +24,7 @@ import simd
   public var pressureProvider: () -> Swift.Double
   public init(userId: Swift.String)
   public func setScanMode(scanMode: TJLabsCommon.ScanMode)
+  public func checkIsAvailableRfd() -> Swift.Bool
   public func generateRfd(rfdIntervalMillis: Foundation.TimeInterval = 1/2, bleScanWindowTimeMillis: Swift.Double = 1000, minRssiThreshold: Swift.Int = -100, maxRssiThreshold: Swift.Int = -40)
   public func stopRfdGeneration()
   @objc deinit
@@ -50,6 +51,7 @@ public struct ReceivedForce : Swift.Encodable {
 public protocol RFDGeneratorDelegate : AnyObject {
   func onRfdResult(_ generator: TJLabsCommon.RFDGenerator, receivedForce: TJLabsCommon.ReceivedForce)
   func onRfdError(_ generator: TJLabsCommon.RFDGenerator, code: Swift.Int, msg: Swift.String)
+  func onRfdEmptyMillis(_ generator: TJLabsCommon.RFDGenerator, time: Swift.Double)
 }
 extension Foundation.NSNotification.Name {
   public static let tjlabsBluetoothReady: Foundation.Notification.Name
@@ -60,6 +62,25 @@ extension Foundation.NSNotification.Name {
   public static let tjlabsDeviceReady: Foundation.Notification.Name
   public static let tjlabsDidReceiveData: Foundation.Notification.Name
   public static let tjlabsScanInfo: Foundation.Notification.Name
+}
+@_hasMissingDesignatedInitializers public class JupiterFileManager {
+  public static let shared: TJLabsCommon.JupiterFileManager
+  public func initalize()
+  public func set(region: Swift.String, sectorId: Swift.Int, deviceModel: Swift.String, osVersion: Swift.Int)
+  public func createFiles(region: Swift.String, sector_id: Swift.Int, deviceModel: Swift.String, osVersion: Swift.Int)
+  public func writeSensorData(currentTime: Swift.Double, data: TJLabsCommon.SensorData)
+  public func writeBleData(time: Swift.Int, data: [Swift.String : Swift.Double])
+  public func saveFilesForSimulation()
+  public func loadFilesForSimulation(bleFile: Swift.String, sensorFile: Swift.String) -> ([[Swift.String : Swift.Double]], [TJLabsCommon.SensorData])
+  @objc deinit
+}
+@_hasMissingDesignatedInitializers public class JupiterSimulator {
+  public static let shared: TJLabsCommon.JupiterSimulator
+  public func initailize()
+  public func setSimulationMode(flag: Swift.Bool, bleFileName: Swift.String, sensorFileName: Swift.String)
+  public func getSimulationBleData() -> [Swift.String : Swift.Double]
+  public func getSimulationSensorData() -> TJLabsCommon.SensorData
+  @objc deinit
 }
 extension Swift.Array where Element : Swift.BinaryInteger {
   public var average: Swift.Double {
@@ -82,6 +103,8 @@ extension Swift.Array where Element == Swift.Double {
     get
   }
 }
+public func += <V>(left: inout [V], right: V)
+public func + <V>(left: Swift.Array<V>, right: V) -> Swift.Array<V>
 extension UIKit.UIDevice {
   @_Concurrency.MainActor @preconcurrency public static let modelIdentifier: Swift.String
   @_Concurrency.MainActor @preconcurrency public static let modelName: Swift.String
@@ -169,6 +192,12 @@ extension Swift.String {
   public func exponentialMovingAverage(preEMA: Swift.Double, curValue: Swift.Double, windowSize: Swift.Int) -> Swift.Double
   public func degree2radian(degree: Swift.Double) -> Swift.Double
   public func radian2degree(radian: Swift.Double) -> Swift.Double
+  public func sliceArrayFrom<T>(_ array: [T], startingFrom index: Swift.Int) -> [T]
+  public func sliceArrayTo<T>(_ array: [T], endTo index: Swift.Int) -> [T]
+  public func sliceArrayFromTo<T>(_ array: [T], startingFrom: Swift.Int, endTo: Swift.Int) -> [T]
+  public func calculateCircularMean(for array: [Swift.Double]) -> Swift.Double
+  public func calculateCircularStd(for array: [Swift.Double]) -> Swift.Double
+  public func subtractConstantInArray(from array: [Swift.Double], constant: Swift.Double) -> [Swift.Double]
   @objc deinit
 }
 @objc @_inheritsConvenienceInitializers public class TJLabsSensorManager : ObjectiveC.NSObject {
@@ -183,7 +212,8 @@ extension Swift.String {
   public init(userId: Swift.String)
   public func setUserMode(mode: TJLabsCommon.UserMode)
   public func updateDrVelocityScale(scale: Swift.Double)
-  public func generateUvd(defaultPDRStepLength: Swift.Double = 0.5, minPDRStepLength: Swift.Double = 0.5, maxPDRStepLength: Swift.Double = 0.7)
+  public func checkIsAvailableUvd() -> Swift.Bool
+  public func generateUvd(defaultPDRStepLength: Swift.Double = 0.6, minPDRStepLength: Swift.Double = 0.5, maxPDRStepLength: Swift.Double = 0.7)
   public func stopUvdGeneration()
   @objc deinit
 }
@@ -239,6 +269,7 @@ public protocol UVDGeneratorDelegate : AnyObject {
   func onUvdResult(_ generator: TJLabsCommon.UVDGenerator, mode: TJLabsCommon.UserMode, userVelocity: TJLabsCommon.UserVelocity)
   func onPressureResult(_ generator: TJLabsCommon.UVDGenerator, hPa: Swift.Double)
   func onVelocityResult(_ generator: TJLabsCommon.UVDGenerator, kmPh: Swift.Double)
+  func onMagNormSmoothingVarResult(_ generator: TJLabsCommon.UVDGenerator, value: Swift.Double)
   func onUvdPauseMillis(_ generator: TJLabsCommon.UVDGenerator, time: Swift.Double)
   func onUvdError(_ generator: TJLabsCommon.UVDGenerator, error: Swift.String)
 }

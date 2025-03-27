@@ -20,7 +20,7 @@ class JupiterCalculator {
     
     static func calculatePhase3(input: FineLocationTrackingInput, trajectoryBuffer: [TrajectoryInfo], searchInfo: SearchInfo, completion: @escaping (JupiterCalculatorResults) -> Void) {
         let postInput = FLT(fltInput: input, trajInfoList: trajectoryBuffer, searchInfo: searchInfo)
-        print("(CheckJupiter) Phase3 Input : \(postInput)")
+        print("(CheckJupiter) Phase3 Input : fltInput = \(postInput.fltInput) // searchInfo = \(searchInfo)")
         JupiterNetworkManager.shared.postFLT(url: JupiterNetworkConstants.getCalcFltURL(), input: postInput, completion: { statusCode, returnedString, input in
             print("(CheckJupiter) Phase3 Output : \(statusCode) // \(returnedString)")
             var output = JupiterCalculatorResults(fltResultList: [], fltInput: postInput.fltInput, inputTrajectoryInfo: postInput.trajInfoList, inputSearchInfo: postInput.searchInfo)

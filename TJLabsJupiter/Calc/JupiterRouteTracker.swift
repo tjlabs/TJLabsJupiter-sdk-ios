@@ -31,7 +31,7 @@ class JupiterRouteTracker {
             let level = entranceInfo.level
             let entranceNumber = entranceInfo.number
             
-            let key = "\(region)_\(sectorId)_\(building)_\(level)_\(entranceNumber)"
+            let key = "\(sectorId)_\(building)_\(level)_\(entranceNumber)"
             self.entranceVelocityScales[key] = entranceInfo.velocityScale
             self.entranceOuterMostWardId[key] = entranceInfo.outerWardId
             self.entranceInnerWardID[key] = entranceInfo.innerWardId

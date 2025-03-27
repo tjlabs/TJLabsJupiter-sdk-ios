@@ -33,6 +33,7 @@ class JupiterMode {
     static var PADDING_VALUES_PDR: [Double] = Array(repeating: PADDING_VALUE_SMALL, count: 4)
     static var PADDING_VALUES_DR: [Double] = Array(repeating: PADDING_VALUE_LARGE, count: 4)
     
-    static var HEADING_UNCERTANTIY: Double = 2.0
+    static let DR_HEADING_CORR_NUM_IDX: Int = 10
+    static let HEADING_UNCERTANTIY: Double = 2.0
 }
 

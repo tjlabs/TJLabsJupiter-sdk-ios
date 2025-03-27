@@ -20,17 +20,19 @@ class JupiterPathMatchingCalculator {
         self.entranceMatchingData[key] = data
     }
     
-    func pathMatching(region: String, sectorId: Int, building: String, level: String, x: Double, y: Double, heading: Double, headingRange: Double, isUseHeading: Bool, mode: UserMode, paddingValues: [Double]) -> xyhs {
+    func pathMatching(region: String, sectorId: Int, building: String, level: String, x: Double, y: Double, heading: Double, headingRange: Double, isUseHeading: Bool, mode: UserMode, paddingValues: [Double]) -> (Bool, xyhs) {
+        var isSuccess: Bool = false
         var xyhs = xyhs(x: x, y: y, heading: heading, scale: 1.0)
         var bestHeading = heading
         
-        guard !building.isEmpty, !level.isEmpty else { return xyhs }
+        guard !building.isEmpty, !level.isEmpty else { return (isSuccess, xyhs) }
         
         let levelName = TJLabsUtilFunctions.shared.removeLevelDirectionString(levelName: level)
         let key = "\(sectorId)_\(building)_\(levelName)"
         
         let checkAvailablePathPixelResult = checkIsAvailablePathPixelData(key: key)
-        guard let entranceMatchingArea = self.entranceMatchingData[key] else { return xyhs }
+        let geoKey = "geofence_\(key)"
+        guard let entranceMatchingArea = self.entranceMatchingData[geoKey] else { return (isSuccess, xyhs) }
         
         if checkAvailablePathPixelResult.0 {
             let pathPixelData = checkAvailablePathPixelResult.1
@@ -91,6 +93,7 @@ class JupiterPathMatchingCalculator {
                 if !idshArray.isEmpty {
                     let updatedXyhs = processIdshArray(idshArray: idshArray, roadX: roadX, roadY: roadY, inputXyhs: &xyhs, bestHeading: &bestHeading, isUseHeading: isUseHeading)
                     xyhs = updatedXyhs
+                    isSuccess = true
                 } else {
                     let updatedXyhs = processFailedIdshArray(idshArrayWhenFail: idshArrayWhenFail, mainHeading: mainHeading, roadX: roadX, roadY: roadY, inputXyhs: &xyhs, bestHeading: &bestHeading)
                     xyhs = updatedXyhs
@@ -99,7 +102,7 @@ class JupiterPathMatchingCalculator {
         }
 
         xyhs.heading = TJLabsUtilFunctions.shared.compensateDegree(xyhs.heading)
-        return xyhs
+        return (isSuccess, xyhs)
     }
     
     func getPathMatchingHeadings(region: String, sectorId: Int, building: String, level: String, x: Double, y: Double, paddingValue: Double, mode: UserMode) -> [Double] {
