@@ -20,7 +20,7 @@ class JupiterBuildingLevelChanager {
         let isInLevelChangeArea = checkInLevelChangeArea(sectorId: sectorId, building: building, level: level, x: x, y: y, mode: mode)
         
         if isInLevelChangeArea {
-            levelArray = makeLevelChangeArray(buildingName: building, levelName: level, buildingLevel: buildingsAndLevelsMap)
+            levelArray = makeLevelChangeArray(buildingName: building, levelNameInput: level, buildingLevel: buildingsAndLevelsMap)
         }
         
         return levelArray
@@ -49,34 +49,39 @@ class JupiterBuildingLevelChanager {
         }
         return false
     }
-    
-    static func makeLevelChangeArray(buildingName: String, levelName: String, buildingLevel: [String:[String]]) -> [String] {
-        let inputLevel = levelName
-        var levelArrayToReturn: [String] = [levelName]
-        
-        if (inputLevel.contains("_D")) {
-            let levelCandidate = inputLevel.replacingOccurrences(of: "_D", with: "")
-            levelArrayToReturn = [inputLevel, levelCandidate]
-        } else {
-            let levelCandidate = inputLevel + "_D"
-            levelArrayToReturn = [inputLevel, levelCandidate]
-        }
+
+    static func makeLevelChangeArray(buildingName: String, levelNameInput: String, buildingLevel: [String:[String]]) -> [String] {
+        var levelArrayToReturn = [String]()
         
         if (!buildingLevel.isEmpty) {
-            guard let levelList: [String] = buildingLevel[buildingName] else {
-                return levelArrayToReturn
+            if (levelNameInput.contains("_D")) {
+                let levelCandidate = levelNameInput.replacingOccurrences(of: "_D", with: "")
+                levelArrayToReturn = [levelNameInput, levelCandidate]
+            } else {
+                let levelCandidate = levelNameInput + "_D"
+                levelArrayToReturn = [levelNameInput, levelCandidate]
             }
             
-            var newArray = [String]()
-            for i in 0..<levelArrayToReturn.count {
-                let levelName: String = levelArrayToReturn[i]
-                if (levelList.contains(levelName)) {
-                    newArray.append(levelName)
+            if let levelList: [String] = buildingLevel[buildingName] {
+                var newArray = [String]()
+                for i in 0..<levelArrayToReturn.count {
+                    let levelName: String = levelArrayToReturn[i]
+                    if levelList.contains(levelName) {
+                        newArray.append(levelName)
+                    }
                 }
+                
+                if !newArray.isEmpty {
+                    levelArrayToReturn = newArray
+                } else {
+                    levelArrayToReturn = [TJLabsUtilFunctions.shared.removeLevelDirectionString(levelName: levelNameInput)]
+                }
+            } else {
+                levelArrayToReturn = [TJLabsUtilFunctions.shared.removeLevelDirectionString(levelName: levelNameInput)]
             }
-            levelArrayToReturn = newArray
+        } else {
+            levelArrayToReturn = [TJLabsUtilFunctions.shared.removeLevelDirectionString(levelName: levelNameInput)]
         }
-        
         return levelArrayToReturn
     }
 }
