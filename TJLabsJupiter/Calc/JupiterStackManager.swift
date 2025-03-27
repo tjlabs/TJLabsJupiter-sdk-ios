@@ -105,4 +105,19 @@ class JupiterStackManager {
             headingBufferForCorrection.remove(at: 0)
         }
     }
+    
+    static func isDrBufferStraightCircularStd(uvdBuffer: [UserVelocity], numIndex: Int, condition: Double = 1) -> (Bool, Double) {
+        if (uvdBuffer.count >= numIndex) {
+            let firstIndex = uvdBuffer.count-numIndex
+            var headingBuffer = [Double]()
+            for i in firstIndex..<uvdBuffer.count-1 {
+                let compensatedHeading = TJLabsUtilFunctions.shared.compensateDegree(uvdBuffer[i].heading)
+                headingBuffer.append(compensatedHeading)
+            }
+            let headingStd = TJLabsUtilFunctions.shared.calculateCircularStd(for: headingBuffer)
+            return (headingStd <= condition) ? (true, headingStd) : (false, headingStd)
+        } else {
+            return (false, 360)
+        }
+    }
 }
