@@ -12,7 +12,9 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
     static var os: String = CommonConstants.OPERATING_SYSTEM
     static var phase: Int = 1
     static var isPhaseBreak: Bool = false
+    
     static var currentUvd = UserVelocity(user_id: "", mobile_time: 0, index: 0, length: 0, heading: 0, looking: false)
+    static var currentUserMask = UserMask(user_id: "", mobile_time: 0, section_number: 0, index: 0, x: 0, y: 0, absolute_heading: 0)
     static var pastUvd = UserVelocity(user_id: "", mobile_time: 0, index: 0, length: 0, heading: 0, looking: false)
     
     static var searchInfo = SearchInfo()
@@ -25,16 +27,9 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
     private var uvdStopTimeStamp: Double = 0
     private var tjlabsResourceManager = TJLabsResourceManager()
     private var osrTimer: DispatchSourceTimer?
-    private var simulationRfdTimer: DispatchSourceTimer?
-    private var simulationUvdTimer: DispatchSourceTimer?
     
     private var rfdGenerator: RFDGenerator?
     private var uvdGenerator: UVDGenerator?
-    
-    private var inputReceivedForce: [ReceivedForce] = []
-    private var inputUserVelocity: [UserVelocity] = []
-    private var sendRfdLength = 2
-    private var sendUvdLength = 4
     
     static var tailIndex: Int = 0
     static var nodeNumberList = [Int]()
@@ -55,6 +50,7 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
     static var isVenus = false
     static var isActiveKf = false
 
+    static var curJupiterPathMathchingResult = FineLocationTrackingOutput()
     static var curJupiterResult = FineLocationTrackingOutput()
     static var preJupiterResult = FineLocationTrackingOutput()
     
@@ -77,13 +73,13 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
     }
     
     static func getJupiterResult() -> JupiterResult {
-        let buildingName = curJupiterResult.building_name
-        let levelName = curJupiterResult.level_name
-        let scc = curJupiterResult.scc
-        let x = curJupiterResult.x
-        let y = curJupiterResult.y
-        let absoluteHeading = curJupiterResult.absolute_heading
-        let calTime = curJupiterResult.calculated_time
+        let buildingName = curJupiterPathMathchingResult.building_name
+        let levelName = curJupiterPathMathchingResult.level_name
+        let scc = curJupiterPathMathchingResult.scc
+        let x = curJupiterPathMathchingResult.x
+        let y = curJupiterPathMathchingResult.y
+        let absoluteHeading = curJupiterPathMathchingResult.absolute_heading
+        let calTime = curJupiterPathMathchingResult.calculated_time
         
         // -- //
         if !isRouteTrack {
@@ -178,7 +174,7 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
                 }
             } else {
                 if JupiterCalcManager.isActiveKf {
-                    updateResultFromTimeUpdate(mode: mode, uvd: uvd, pastUvd: JupiterCalcManager.pastUvd)
+                    _ = updateResultFromTimeUpdate(mode: mode, uvd: uvd, pastUvd: JupiterCalcManager.pastUvd)
                     
                     let isNeedUpateAnchorNode = JupiterSectionController.extendedCheckIsNeedAnchorNodeUpdate(uvdLength: uvd.length, curHeading: JupiterCalcManager.curJupiterResult.absolute_heading, preHeading: JupiterCalcManager.preJupiterResult.absolute_heading)
                     print("(CheckIsAnchorNodeUpdate) : curHeaidng = \(JupiterCalcManager.curJupiterResult.absolute_heading) // preHeading = \(JupiterCalcManager.preJupiterResult.absolute_heading)")
@@ -210,6 +206,14 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
                     break
                 }
             }
+        }
+        let paddingValues = mode == .MODE_VEHICLE ? JupiterMode.PADDING_VALUES_DR : JupiterMode.PADDING_VALUES_PDR
+        let pmResults = JupiterPathMatchingCalculator.shared.pathMatching(region: JupiterPathMatchingCalculator.shared.region, sectorId: JupiterPathMatchingCalculator.shared.sectorId, building: JupiterCalcManager.curJupiterResult.building_name, level: JupiterCalcManager.curJupiterResult.level_name, x: JupiterCalcManager.curJupiterResult.x, y: JupiterCalcManager.curJupiterResult.y, heading: JupiterCalcManager.curJupiterResult.absolute_heading, headingRange: JupiterMode.HEADING_RANGE, isUseHeading: true, mode: mode, paddingValues: paddingValues)
+        if pmResults.0 {
+            JupiterCalcManager.curJupiterPathMathchingResult = JupiterCalcManager.curJupiterResult
+            JupiterCalcManager.curJupiterPathMathchingResult.x = pmResults.1.x
+            JupiterCalcManager.curJupiterPathMathchingResult.y = pmResults.1.y
+            JupiterCalcManager.curJupiterPathMathchingResult.absolute_heading = pmResults.1.heading
         }
         JupiterCalcManager.pastUvd = uvd
         JupiterCalcManager.preJupiterResult = JupiterCalcManager.curJupiterResult
@@ -248,12 +252,13 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
         
     }
     
-    private func updateResultFromTimeUpdate(mode: UserMode, uvd: UserVelocity, pastUvd: UserVelocity) {
+    private func updateResultFromTimeUpdate(mode: UserMode, uvd: UserVelocity, pastUvd: UserVelocity) -> FineLocationTrackingOutput {
         if mode == .MODE_PEDESTRIAN {
             JupiterCalcManager.curJupiterResult = JupiterKalmanFilter.pdrTimeUpdate(region: JupiterCalcManager.region, sectorId: JupiterCalcManager.sectorId, uvd: uvd, pastUvd: pastUvd)
         } else {
             JupiterCalcManager.curJupiterResult = JupiterKalmanFilter.drTimeUpdate(region: JupiterCalcManager.region, sectorId: JupiterCalcManager.sectorId, uvd: uvd, pastUvd: pastUvd)
         }
+        return JupiterCalcManager.curJupiterResult
     }
     
     private func updateResultFromFlt(jupiterCalculatorResults: JupiterCalculatorResults) -> FineLocationTrackingOutput {
@@ -263,7 +268,6 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
         print("(CheckJupiter) updatedServerResult : pmResults = \(pmResults)")
         
         let pmXyhs: xyhs = pmResults.1
-        
         selectedResult.x = pmXyhs.x
         selectedResult.y = pmXyhs.y
         selectedResult.absolute_heading = pmXyhs.heading
@@ -275,9 +279,8 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
             JupiterCalcManager.isActiveKf = true
             JupiterKalmanFilter.updateTuResult(result: selectedResult)
         }
-        
+
         JupiterCalcManager.preServerResult = selectedResult
-        JupiterCalcManager.curJupiterResult = selectedResult
         JupiterCalcManager.preServerResultMobileTime = TJLabsUtilFunctions.shared.getCurrentTimeInMillisecondsDouble()
         
         return selectedResult
@@ -285,11 +288,11 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
     
     // MARK: - Set REC length
     public func setSendRfdLength(_ length: Int = 2) {
-        sendRfdLength = length
+        JupiterDataBatchSender.sendRfdLength = length
     }
     
     public func setSendUvdLength(_ length: Int = 4) {
-        sendUvdLength = length
+        JupiterDataBatchSender.sendUvdLength = length
     }
     
     func startGenerator(mode: UserMode, completion: @escaping (Bool, String) -> Void) {
@@ -325,35 +328,14 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
     }
     
     // MARK: - Send Data to REC
-    private func sendRfd(rfd: ReceivedForce) {
-        let rfdURL = JupiterNetworkConstants.getRecRfdURL()
-        inputReceivedForce.append(rfd)
-        if inputReceivedForce.count >= sendRfdLength {
-            JupiterNetworkManager.shared.postReceivedForce(url: rfdURL, input: inputReceivedForce) { [self] statusCode, returnedString, inputRfd in
-//                print("(POST) RFD : statusCode = \(statusCode)")
-            }
-            inputReceivedForce.removeAll()
-        }
-    }
-    
-    private func sendUvd(uvd: UserVelocity) {
-        let uvdURL = JupiterNetworkConstants.getRecUvdURL()
-        inputUserVelocity.append(uvd)
-        if inputUserVelocity.count >= sendUvdLength {
-            JupiterNetworkManager.shared.postUserVelocity(url: uvdURL, input: inputUserVelocity) { [self] statusCode, returnedString, inputUvd in
-//                print("(POST) UVD : statusCode = \(statusCode)")
-            }
-            inputUserVelocity.removeAll()
-        }
-    }
-    
+
     // MARK: - RFDGeneratorDelegate Methods
     func onRfdResult(_ generator: TJLabsCommon.RFDGenerator, receivedForce: TJLabsCommon.ReceivedForce) {
         handleRfd(rfd: receivedForce)
     }
     
     func handleRfd(rfd: ReceivedForce) {
-        sendRfd(rfd: rfd)
+        JupiterDataBatchSender.sendRfd(rfd: rfd)
         if !JupiterCalcManager.isIndoor && !JupiterCalcManager.isRouteTrack {
             let checkStartRouteTrackResult = JupiterRouteTracker.shared.checkStartRouteTrack(bleAvg: rfd.ble, sec: 3)
             JupiterCalcManager.isRouteTrack = checkStartRouteTrackResult.0
@@ -404,12 +386,20 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
         calcJupiterResultInStop(time: time)
     }
     func onUvdResult(_ generator: UVDGenerator, mode: UserMode, userVelocity: UserVelocity) {
-        sendUvd(uvd: userVelocity)
+        let currentTime = TJLabsUtilFunctions.shared.getCurrentTimeInMilliseconds()
+        JupiterDataBatchSender.sendUvd(uvd: userVelocity)
         JupiterCalcManager.currentUserMode = mode
         JupiterCalcManager.currentUvd = userVelocity
         uvdStopTimeStamp = 0
         JupiterStackManager.stackUnitDRInfo(unitDRInfo: userVelocity)
         calcJupiterResult(mode: mode, uvd: userVelocity)
+        
+        if JupiterCalcManager.isActiveKf {
+            JupiterCalcManager.currentUserMask = UserMask(user_id: JupiterCalcManager.id, mobile_time: currentTime, section_number: JupiterSectionController.sectionNumber, index: JupiterCalcManager.currentUvd.index, x: Int(JupiterCalcManager.curJupiterPathMathchingResult.x), y: Int(JupiterCalcManager.curJupiterPathMathchingResult.y), absolute_heading: JupiterCalcManager.curJupiterPathMathchingResult.absolute_heading)
+            JupiterDataBatchSender.sendUserMask(userMask: JupiterCalcManager.currentUserMask)
+            JupiterStackManager.stackUserMask(userMask: JupiterCalcManager.currentUserMask)
+        }
+        
     }
     func onVelocityResult(_ generator: UVDGenerator, kmPh: Double) {
         JupiterCalcManager.currentVelocity = kmPh
