@@ -172,7 +172,9 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
             
             if JupiterCalcManager.isVenus {
                 if uvd.index % rqIndex == 0 {
-                    phase1()
+                    phase1(completion: { selectedResult in
+                        JupiterCalcManager.curJupiterResult = selectedResult
+                    })
                 }
             } else {
                 if JupiterCalcManager.isActiveKf {
@@ -189,11 +191,15 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
                 switch (JupiterCalcManager.phase) {
                 case 1:
                     if uvd.index % rqIndex == 0 {
-                        phase1()
+                        phase1(completion: { selectedResult in
+                            JupiterCalcManager.curJupiterResult = selectedResult
+                        })
                     }
                 case 3:
                     if uvd.index % rqIndex == 0 {
-                        phase3(trajectoryBuffer: trajectoryBuffer, searchInfo: searchInfo)
+                        phase3(trajectoryBuffer: trajectoryBuffer, searchInfo: searchInfo, completion: { selectedResult in
+                            JupiterCalcManager.curJupiterResult = selectedResult
+                        })
                     }
                     break
                 case 5:
@@ -212,21 +218,25 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
     private func calcJupiterResultInStop(time: Double) {
         if !JupiterCalcManager.isPossibleReturnJupiterResult() {
             if (time - uvdStopTimeStamp >= 2000 && rfdEmptyMillis <= 10*JupiterTime.SECONDS_TO_MILLIS) {
-                phase1()
+                phase1(completion: { selectedResult in
+                    JupiterCalcManager.curJupiterResult = selectedResult
+                })
                 uvdStopTimeStamp = time
             }
         }
     }
     
-    private func phase1() {
+    private func phase1(completion: @escaping (FineLocationTrackingOutput) -> Void) {
         JupiterCalculator.calculatePhase1(input: JupiterCalcManager.getJupiterInput(), completion: { [self] phaseCalculatorResult in
-            updateResultFromFlt(jupiterCalculatorResults: phaseCalculatorResult)
+            let selecteResult = updateResultFromFlt(jupiterCalculatorResults: phaseCalculatorResult)
+            completion(selecteResult)
         })
     }
     
-    private func phase3(trajectoryBuffer: [TrajectoryInfo], searchInfo: SearchInfo) {
+    private func phase3(trajectoryBuffer: [TrajectoryInfo], searchInfo: SearchInfo, completion: @escaping (FineLocationTrackingOutput) -> Void) {
         JupiterCalculator.calculatePhase3(input: JupiterCalcManager.getJupiterInput(), trajectoryBuffer: trajectoryBuffer, searchInfo: searchInfo, completion: { [self] phaseCalculatorResult in
-            updateResultFromFlt(jupiterCalculatorResults: phaseCalculatorResult)
+            let selecteResult = updateResultFromFlt(jupiterCalculatorResults: phaseCalculatorResult)
+            completion(selecteResult)
         })
     }
     
