@@ -9,17 +9,23 @@ class JupiterNetworkManager {
     
     private let rfdSessions: [URLSession]
     private let uvdSessions: [URLSession]
+    private let umSessions:  [URLSession]
+    private let mrSessions:  [URLSession]
     private let fltSessions: [URLSession]
     private let osrSessions: [URLSession]
     
     private var rfdSessionCount = 0
     private var uvdSessionCount = 0
+    private var umSessionCount  = 0
+    private var mrSessionCount  = 0
     private var fltSessionCount = 0
     private var osrSessionCount = 0
 
     private init() {
         self.rfdSessions = JupiterNetworkManager.createSessionPool()
         self.uvdSessions = JupiterNetworkManager.createSessionPool()
+        self.umSessions  = JupiterNetworkManager.createSessionPool()
+        self.mrSessions  = JupiterNetworkManager.createSessionPool()
         self.fltSessions = JupiterNetworkManager.createSessionPool()
         self.osrSessions = JupiterNetworkManager.createSessionPool()
     }
@@ -40,8 +46,8 @@ class JupiterNetworkManager {
     // MARK: - Helper Methods
     private static func createSessionPool() -> [URLSession] {
         let config = URLSessionConfiguration.default
-        config.timeoutIntervalForResource = JupiterNetworkConstants.TIMEOUT_VALUE_PUT
-        config.timeoutIntervalForRequest = JupiterNetworkConstants.TIMEOUT_VALUE_PUT
+        config.timeoutIntervalForResource = JupiterNetworkConstants.TIMEOUT_VALUE_POST
+        config.timeoutIntervalForRequest = JupiterNetworkConstants.TIMEOUT_VALUE_POST
         return (1...3).map { _ in URLSession(configuration: config) }
     }
 
@@ -159,6 +165,58 @@ class JupiterNetworkManager {
         performRequest(request: request, session: session, input: input, completion: completion)
     }
     
+    func postUserMask(url: String, input: [UserMask], completion: @escaping (Int, String, [UserMask]) -> Void) {
+        guard let body = encodeJson(input),
+              let request = makeRequest(url: url, body: body) else {
+            DispatchQueue.main.async { completion(406, "Invalid URL or failed to encode JSON", input) }
+            return
+        }
+
+        let session = umSessions[umSessionCount % umSessions.count]
+        umSessionCount += 1
+        performRequest(request: request, session: session, input: input, completion: completion)
+    }
+    
+    func postMobileResult(url: String, input: [MobileResult], completion: @escaping (Int, String, [MobileResult]) -> Void) {
+        guard let body = encodeJson(input),
+              let request = makeRequest(url: url, body: body) else {
+            DispatchQueue.main.async { completion(406, "Invalid URL or failed to encode JSON", input) }
+            return
+        }
+        
+        let session = mrSessions[mrSessionCount % mrSessions.count]
+        mrSessionCount += 1
+        performRequest(request: request, session: session, input: input, completion: completion)
+    }
+    
+    func postMobileReport(url: String, input: MobileReport, completion: @escaping (Int, String, MobileReport) -> Void) {
+        guard let body = encodeJson(input),
+              let request = makeRequest(url: url, body: body) else {
+            DispatchQueue.main.async { completion(406, "Invalid URL or failed to encode JSON", input) }
+            return
+        }
+        
+        let sessionConfig = URLSessionConfiguration.default
+        sessionConfig.timeoutIntervalForResource = JupiterNetworkConstants.TIMEOUT_VALUE_POST
+        sessionConfig.timeoutIntervalForRequest = JupiterNetworkConstants.TIMEOUT_VALUE_POST
+        let session = URLSession(configuration: sessionConfig)
+        performRequest(request: request, session: session, input: input, completion: completion)
+    }
+    
+    func postParam(url: String, input: RcInfoSave, completion: @escaping (Int, String, RcInfoSave) -> Void) {
+        guard let body = encodeJson(input),
+              let request = makeRequest(url: url, body: body) else {
+            DispatchQueue.main.async { completion(406, "Invalid URL or failed to encode JSON", input) }
+            return
+        }
+        
+        let sessionConfig = URLSessionConfiguration.default
+        sessionConfig.timeoutIntervalForResource = JupiterNetworkConstants.TIMEOUT_VALUE_POST
+        sessionConfig.timeoutIntervalForRequest = JupiterNetworkConstants.TIMEOUT_VALUE_POST
+        let session = URLSession(configuration: sessionConfig)
+        performRequest(request: request, session: session, input: input, completion: completion)
+    }
+    
     func postFLT(url: String, input: FLT, completion: @escaping (Int, String, FLT) -> Void) {
         let fltInput: FineLocationTrackingInput = input.fltInput
         guard let body = encodeJson(fltInput),
@@ -192,8 +250,8 @@ class JupiterNetworkManager {
         requestURL.httpMethod = "GET"
         
         let sessionConfig = URLSessionConfiguration.default
-        sessionConfig.timeoutIntervalForResource = JupiterNetworkConstants.TIMEOUT_VALUE_PUT
-        sessionConfig.timeoutIntervalForRequest = JupiterNetworkConstants.TIMEOUT_VALUE_PUT
+        sessionConfig.timeoutIntervalForResource = JupiterNetworkConstants.TIMEOUT_VALUE_POST
+        sessionConfig.timeoutIntervalForRequest = JupiterNetworkConstants.TIMEOUT_VALUE_POST
         let session = URLSession(configuration: sessionConfig)
         let dataTask = session.dataTask(with: requestURL, completionHandler: { (data, response, error) in
             
