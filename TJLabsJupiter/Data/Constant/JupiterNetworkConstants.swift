@@ -3,11 +3,13 @@ import Foundation
 
 public class JupiterNetworkConstants {
     static let TIMEOUT_VALUE_PUT: TimeInterval = 5.0
+    static let TIMEOUT_VALUE_POST: TimeInterval = 5.0
     
     static let USER_LOGIN_SERVER_VERSION = "2024-06-12"
     
     static let REC_RFD_SERVER_VERSION = "2024-04-19"
     static let REC_UVD_SERVER_VERSION = "2024-04-19"
+    static let REC_USER_MASK_SERVER_VERSION = "2024-04-19"
 
     static let CALC_FLT_SERVER_VERSION = "2024-12-12"
     static let CALC_OSR_SERVER_VERSION = "2024-08-30"
@@ -77,6 +79,10 @@ public class JupiterNetworkConstants {
         return REC_UVD_SERVER_VERSION
     }
     
+    public static func getRecUserMaskServerVersion() -> String {
+        return REC_USER_MASK_SERVER_VERSION
+    }
+    
     public static func getUserLoginURL() -> String {
         return USER_URL + "/" + USER_LOGIN_SERVER_VERSION + "/user"
     }
@@ -87,6 +93,10 @@ public class JupiterNetworkConstants {
     
     public static func getRecUvdURL() -> String {
         return REC_URL + "/" + REC_UVD_SERVER_VERSION + "/uv"
+    }
+    
+    public static func getRecUserMaskURL() -> String {
+        return REC_URL + "/" + REC_USER_MASK_SERVER_VERSION + "/um"
     }
     
     public static func getCalcFltURL() -> String {
