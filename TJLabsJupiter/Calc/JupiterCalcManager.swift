@@ -55,7 +55,9 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
     static var isVenus = false
     static var isActiveKf = false
 
-    static var currentJupiterResult = FineLocationTrackingOutput()
+    static var curJupiterResult = FineLocationTrackingOutput()
+    static var preJupiterResult = FineLocationTrackingOutput()
+    
     static var preServerResult = FineLocationTrackingOutput()
     static var preServerResultMobileTime: Double = 0
 
@@ -66,22 +68,22 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
     
     // MARK: - Static Methods
     static func getJupiterInput() -> FineLocationTrackingInput {
-        let buildingName = currentJupiterResult.building_name
-        let levelName = currentJupiterResult.level_name
-        let x = currentJupiterResult.x
-        let y = currentJupiterResult.y
+        let buildingName = curJupiterResult.building_name
+        let levelName = curJupiterResult.level_name
+        let x = curJupiterResult.x
+        let y = curJupiterResult.y
         
         return FineLocationTrackingInput(user_id: id, mobile_time: TJLabsUtilFunctions.shared.getCurrentTimeInMilliseconds(), sector_id: sectorId, operating_system: os, building_name: buildingName, level_name_list: JupiterBuildingLevelChanager.makeLevelList(sectorId: sectorId, building: buildingName, level: levelName, x: x, y: y, mode: currentUserMode), phase: phase, search_range: searchInfo.searchRange, search_direction_list: searchInfo.searchDirection, normalization_scale: normalizationScale, device_min_rss: Int(deviceMinRss), sc_compensation_list: getScCompensationList(phase: phase), tail_index: searchInfo.tailIndex, head_section_number: headSectionInfo, node_number_list: nodeNumberList, node_index: nodeIndex, retry: retry)
     }
     
     static func getJupiterResult() -> JupiterResult {
-        let buildingName = currentJupiterResult.building_name
-        let levelName = currentJupiterResult.level_name
-        let scc = currentJupiterResult.scc
-        let x = currentJupiterResult.x
-        let y = currentJupiterResult.y
-        let absoluteHeading = currentJupiterResult.absolute_heading
-        let calTime = currentJupiterResult.calculated_time
+        let buildingName = curJupiterResult.building_name
+        let levelName = curJupiterResult.level_name
+        let scc = curJupiterResult.scc
+        let x = curJupiterResult.x
+        let y = curJupiterResult.y
+        let absoluteHeading = curJupiterResult.absolute_heading
+        let calTime = curJupiterResult.calculated_time
         
         // -- //
         if !isRouteTrack {
@@ -120,10 +122,10 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
     }
 
     static func isPossibleReturnJupiterResult() -> Bool {
-        let buildingName = currentJupiterResult.building_name
-        let levelName = currentJupiterResult.level_name
-        let x = currentJupiterResult.x
-        let y = currentJupiterResult.y
+        let buildingName = curJupiterResult.building_name
+        let levelName = curJupiterResult.level_name
+        let x = curJupiterResult.x
+        let y = curJupiterResult.y
         
         return x != 0.0 && y != 0.0 && !buildingName.isEmpty && !levelName.isEmpty
     }
@@ -163,32 +165,41 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
     // MARK: - Calculation Methods
     private func calcJupiterResult(mode: UserMode, uvd: UserVelocity) {
         if JupiterCalcManager.isRouteTrack {
-            JupiterCalcManager.currentJupiterResult = JupiterRouteTracker.shared.startRouteTracking(uvd: uvd, curResult: JupiterCalcManager.currentJupiterResult)
-            print("(CheckRouteTracking) : simul result // x = \(JupiterCalcManager.currentJupiterResult.x) , y = \(JupiterCalcManager.currentJupiterResult.y) , h = \(JupiterCalcManager.currentJupiterResult.absolute_heading)")
+            JupiterCalcManager.curJupiterResult = JupiterRouteTracker.shared.startRouteTracking(uvd: uvd, curResult: JupiterCalcManager.curJupiterResult)
+            print("(CheckRouteTracking) : simul result // x = \(JupiterCalcManager.curJupiterResult.x) , y = \(JupiterCalcManager.curJupiterResult.y) , h = \(JupiterCalcManager.curJupiterResult.absolute_heading)")
         } else {
             let rqIndex = mode == .MODE_VEHICLE ? JupiterMode.RQ_IDX_DR : JupiterMode.RQ_IDX_PDR
             
             if JupiterCalcManager.isVenus {
                 if uvd.index % rqIndex == 0 {
-                    phase1()
+                    phase1(completion: { selectedResult in
+                        JupiterCalcManager.curJupiterResult = selectedResult
+                    })
                 }
             } else {
                 if JupiterCalcManager.isActiveKf {
                     updateResultFromTimeUpdate(mode: mode, uvd: uvd, pastUvd: JupiterCalcManager.pastUvd)
+                    
+                    let isNeedUpateAnchorNode = JupiterSectionController.extendedCheckIsNeedAnchorNodeUpdate(uvdLength: uvd.length, curHeading: JupiterCalcManager.curJupiterResult.absolute_heading, preHeading: JupiterCalcManager.preJupiterResult.absolute_heading)
+                    print("(CheckIsAnchorNodeUpdate) : curHeaidng = \(JupiterCalcManager.curJupiterResult.absolute_heading) // preHeading = \(JupiterCalcManager.preJupiterResult.absolute_heading)")
                 }
                 
-                let trajectoryBuffer = JupiterTrajectoryCalculator.updateTrajectoryBuffer(mode: mode, uvd: uvd, jupiterResult: JupiterCalcManager.getJupiterResult(), serverResult: JupiterCalcManager.currentJupiterResult)
+                let trajectoryBuffer = JupiterTrajectoryCalculator.updateTrajectoryBuffer(mode: mode, uvd: uvd, jupiterResult: JupiterCalcManager.getJupiterResult(), serverResult: JupiterCalcManager.curJupiterResult)
                 let searchInfo = mode == .MODE_VEHICLE ? JupiterTrajectoryCalculator.makeDrSearchInfo(phase: JupiterCalcManager.phase, trajectoryBuffer: trajectoryBuffer, lengthThreshold: JupiterMode.USER_TRAJECTORY_LENGTH_DR) : JupiterTrajectoryCalculator.makePdrSearchInfo(phase: JupiterCalcManager.phase, trajectoryBuffer: trajectoryBuffer, lengthThreshold: JupiterMode.USER_TRAJECTORY_LENGTH_PDR)
                 print("(CheckJupiter) : serachInfo = \(searchInfo) , phase = \(JupiterCalcManager.phase)")
                 
                 switch (JupiterCalcManager.phase) {
                 case 1:
                     if uvd.index % rqIndex == 0 {
-                        phase1()
+                        phase1(completion: { selectedResult in
+                            JupiterCalcManager.curJupiterResult = selectedResult
+                        })
                     }
                 case 3:
                     if uvd.index % rqIndex == 0 {
-                        phase3(trajectoryBuffer: trajectoryBuffer, searchInfo: searchInfo)
+                        phase3(trajectoryBuffer: trajectoryBuffer, searchInfo: searchInfo, completion: { selectedResult in
+                            JupiterCalcManager.curJupiterResult = selectedResult
+                        })
                     }
                     break
                 case 5:
@@ -201,26 +212,31 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
             }
         }
         JupiterCalcManager.pastUvd = uvd
+        JupiterCalcManager.preJupiterResult = JupiterCalcManager.curJupiterResult
     }
     
     private func calcJupiterResultInStop(time: Double) {
         if !JupiterCalcManager.isPossibleReturnJupiterResult() {
             if (time - uvdStopTimeStamp >= 2000 && rfdEmptyMillis <= 10*JupiterTime.SECONDS_TO_MILLIS) {
-                phase1()
+                phase1(completion: { selectedResult in
+                    JupiterCalcManager.curJupiterResult = selectedResult
+                })
                 uvdStopTimeStamp = time
             }
         }
     }
     
-    private func phase1() {
+    private func phase1(completion: @escaping (FineLocationTrackingOutput) -> Void) {
         JupiterCalculator.calculatePhase1(input: JupiterCalcManager.getJupiterInput(), completion: { [self] phaseCalculatorResult in
-            updateResultFromFlt(jupiterCalculatorResults: phaseCalculatorResult)
+            let selecteResult = updateResultFromFlt(jupiterCalculatorResults: phaseCalculatorResult)
+            completion(selecteResult)
         })
     }
     
-    private func phase3(trajectoryBuffer: [TrajectoryInfo], searchInfo: SearchInfo) {
+    private func phase3(trajectoryBuffer: [TrajectoryInfo], searchInfo: SearchInfo, completion: @escaping (FineLocationTrackingOutput) -> Void) {
         JupiterCalculator.calculatePhase3(input: JupiterCalcManager.getJupiterInput(), trajectoryBuffer: trajectoryBuffer, searchInfo: searchInfo, completion: { [self] phaseCalculatorResult in
-            updateResultFromFlt(jupiterCalculatorResults: phaseCalculatorResult)
+            let selecteResult = updateResultFromFlt(jupiterCalculatorResults: phaseCalculatorResult)
+            completion(selecteResult)
         })
     }
     
@@ -234,26 +250,25 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
     
     private func updateResultFromTimeUpdate(mode: UserMode, uvd: UserVelocity, pastUvd: UserVelocity) {
         if mode == .MODE_PEDESTRIAN {
-            JupiterCalcManager.currentJupiterResult = JupiterKalmanFilter.pdrTimeUpdate(region: JupiterCalcManager.region, sectorId: JupiterCalcManager.sectorId, uvd: uvd, pastUvd: pastUvd)
+            JupiterCalcManager.curJupiterResult = JupiterKalmanFilter.pdrTimeUpdate(region: JupiterCalcManager.region, sectorId: JupiterCalcManager.sectorId, uvd: uvd, pastUvd: pastUvd)
         } else {
-            JupiterCalcManager.currentJupiterResult = JupiterKalmanFilter.drTimeUpdate(region: JupiterCalcManager.region, sectorId: JupiterCalcManager.sectorId, uvd: uvd, pastUvd: pastUvd)
+            JupiterCalcManager.curJupiterResult = JupiterKalmanFilter.drTimeUpdate(region: JupiterCalcManager.region, sectorId: JupiterCalcManager.sectorId, uvd: uvd, pastUvd: pastUvd)
         }
     }
     
-    private func updateResultFromFlt(jupiterCalculatorResults: JupiterCalculatorResults) {
+    private func updateResultFromFlt(jupiterCalculatorResults: JupiterCalculatorResults) -> FineLocationTrackingOutput {
         var selectedResult = JupiterResultSelector.selectBestResult(results: jupiterCalculatorResults.fltResultList)
         let paddingValues = JupiterCalcManager.currentUserMode == .MODE_VEHICLE ? JupiterMode.PADDING_VALUES_DR : JupiterMode.PADDING_VALUES_PDR
         let pmResults = JupiterPathMatchingCalculator.shared.pathMatching(region: JupiterPathMatchingCalculator.shared.region, sectorId: JupiterPathMatchingCalculator.shared.sectorId, building: selectedResult.building_name, level: selectedResult.level_name, x: selectedResult.x, y: selectedResult.y, heading: selectedResult.absolute_heading, headingRange: JupiterMode.HEADING_RANGE, isUseHeading: true, mode: JupiterCalcManager.currentUserMode, paddingValues: paddingValues)
         print("(CheckJupiter) updatedServerResult : pmResults = \(pmResults)")
         
-        let isPmSuccess = pmResults.0
         let pmXyhs: xyhs = pmResults.1
         
         selectedResult.x = pmXyhs.x
         selectedResult.y = pmXyhs.y
         selectedResult.absolute_heading = pmXyhs.heading
         
-        let updatedPhase = JupiterPhaseController.controlPhase(inputPhase: JupiterCalcManager.phase, curResult: JupiterCalcManager.currentJupiterResult, preResult: JupiterCalcManager.preServerResult, trajectoryBuffer: jupiterCalculatorResults.inputTrajectoryInfo, drBuffer: JupiterStackManager.unitDRInfoBuffer, mode: JupiterCalcManager.currentUserMode)
+        let updatedPhase = JupiterPhaseController.controlPhase(inputPhase: JupiterCalcManager.phase, curResult: JupiterCalcManager.curJupiterResult, preResult: JupiterCalcManager.preServerResult, trajectoryBuffer: jupiterCalculatorResults.inputTrajectoryInfo, drBuffer: JupiterStackManager.unitDRInfoBuffer, mode: JupiterCalcManager.currentUserMode)
         JupiterCalcManager.phase = updatedPhase
         
         if !JupiterCalcManager.isActiveKf && JupiterCalcManager.phase == JupiterPhase.PHASE_6 {
@@ -262,8 +277,10 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
         }
         
         JupiterCalcManager.preServerResult = selectedResult
-        JupiterCalcManager.currentJupiterResult = selectedResult
+        JupiterCalcManager.curJupiterResult = selectedResult
         JupiterCalcManager.preServerResultMobileTime = TJLabsUtilFunctions.shared.getCurrentTimeInMillisecondsDouble()
+        
+        return selectedResult
     }
     
     // MARK: - Set REC length
@@ -342,19 +359,19 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
             JupiterCalcManager.isRouteTrack = checkStartRouteTrackResult.0
             if JupiterCalcManager.isRouteTrack {
                 let key = checkStartRouteTrackResult.1
-                JupiterCalcManager.currentJupiterResult.building_name = String(key.split(separator: "_")[2])
+                JupiterCalcManager.curJupiterResult.building_name = String(key.split(separator: "_")[2])
             }
         }
         
         if JupiterCalcManager.isRouteTrack {
-            let checkFinishRouteTrackResult = JupiterRouteTracker.shared.stopRouteTracking(curResult: JupiterCalcManager.currentJupiterResult, bleAvg: rfd.ble, normalizationScale: JupiterCalcManager.normalizationScale, deviceMinRss: JupiterCalcManager.deviceMinRss
+            let checkFinishRouteTrackResult = JupiterRouteTracker.shared.stopRouteTracking(curResult: JupiterCalcManager.curJupiterResult, bleAvg: rfd.ble, normalizationScale: JupiterCalcManager.normalizationScale, deviceMinRss: JupiterCalcManager.deviceMinRss
                                                                                            , standardMinRss: JupiterCalcManager.standardMinRss)
             if checkFinishRouteTrackResult.0 {
                 // RouteTrack Finshid (Normal)
                 JupiterCalcManager.isRouteTrack = false
                 JupiterCalcManager.isActiveKf = true
                 JupiterCalcManager.phase = 6
-                JupiterCalcManager.currentJupiterResult = checkFinishRouteTrackResult.1
+                JupiterCalcManager.curJupiterResult = checkFinishRouteTrackResult.1
                 JupiterKalmanFilter.updateTuResult(result: checkFinishRouteTrackResult.1)
             }
             
