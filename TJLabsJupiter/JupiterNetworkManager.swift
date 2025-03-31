@@ -230,6 +230,19 @@ class JupiterNetworkManager {
         performRequest(request: request, session: session, input: input, completion: completion)
     }
     
+    func postStableFLT(url: String, input: StableFLT, completion: @escaping (Int, String, StableFLT) -> Void) {
+        let fltInput: FineLocationTrackingInput = input.fltInput
+        guard let body = encodeJson(fltInput),
+              let request = makeRequest(url: url, body: body) else {
+            DispatchQueue.main.async { completion(406, "Invalid URL or failed to encode JSON", input) }
+            return
+        }
+        
+        let session = fltSessions[fltSessionCount % fltSessions.count]
+        fltSessionCount += 1
+        performRequest(request: request, session: session, input: input, completion: completion)
+    }
+    
     func postOSR(url: String, input: OnSpotRecognitionInput, completion: @escaping (Int, String, OnSpotRecognitionInput) -> Void) {
         let osrInput: OnSpotRecognitionInput = input
         guard let body = encodeJson(osrInput),
