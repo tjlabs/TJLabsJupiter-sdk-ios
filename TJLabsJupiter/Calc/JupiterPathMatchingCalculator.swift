@@ -161,7 +161,102 @@ class JupiterPathMatchingCalculator {
         return headings
     }
     
-    private func checkIsAvailablePathPixelData(key: String) -> (Bool, PathPixelData) {
+    func getMatchedNodeWithCoord(region: String, sectorId: Int, fltResult: FineLocationTrackingOutput, originCoord: [Double], coordToCheck: [Double], pathType: Int, paddingValues: [Double]) -> (Bool, Int, [Double]) {
+        let building = fltResult.building_name
+        let level = fltResult.level_name
+        let levelName = TJLabsUtilFunctions.shared.removeLevelDirectionString(levelName: fltResult.level_name)
+        let x = coordToCheck[0]
+        let y = coordToCheck[1]
+        
+        let key: String = "\(sectorId)_\(building)_\(levelName)"
+        let isPpEndPoint: Bool = true
+        let matchedNode: Int = -1
+        var matchedNodeHeadings = [Double]()
+        if (!(building.isEmpty) && !(level.isEmpty)) {
+            let pathPixelData = checkIsAvailablePathPixelData(key: key)
+            if !pathPixelData.0 { return (isPpEndPoint, matchedNode, matchedNodeHeadings) }
+            let mainType: [Int] = pathPixelData.1.roadType
+            let mainRoad: [[Double]] = pathPixelData.1.road
+            let mainHeading: [String] = pathPixelData.1.roadHeading
+            let mainNode: [Int] = pathPixelData.1.nodeNumber
+            
+            if (!mainRoad.isEmpty) {
+                let roadX = mainRoad[0]
+                let roadY = mainRoad[1]
+                
+                let xMin = originCoord[0] - paddingValues[0]
+                let xMax = originCoord[0] + paddingValues[1]
+                let yMin = originCoord[1] - paddingValues[2]
+                let yMax = originCoord[1] + paddingValues[3]
+                
+                for i in 0..<roadX.count {
+                    let xPath = roadX[i]
+                    let yPath = roadY[i]
+                    let node = mainNode[i]
+                    let headingArray = mainHeading[i]
+                    
+                    let pathTypeLoaded = mainType[i]
+                    // XY 범위 안에 있는 값 중에 검사
+                    if (xPath >= xMin && xPath <= xMax) {
+                        if (yPath >= yMin && yPath <= yMax) {
+                            if (x == xPath && y == yPath) {
+                                if (pathType == 1) {
+                                    if (pathType != pathTypeLoaded) {
+                                        return (false, matchedNode, matchedNodeHeadings)
+                                    }
+                                }
+
+                                var ppHeadingValues = [Double]()
+                                let headingData = headingArray.components(separatedBy: ",")
+                                for j in 0..<headingData.count {
+                                    if(!headingData[j].isEmpty) {
+                                        let mapHeading = Double(headingData[j])!
+                                        ppHeadingValues.append(mapHeading)
+                                    }
+                                }
+                                if (node == 0) {
+                                    return (false, matchedNode, matchedNodeHeadings)
+                                } else {
+                                    matchedNodeHeadings = ppHeadingValues
+                                    return (false, matchedNode, matchedNodeHeadings)
+//                                    if ppHeadingValues.contains(fltResult.absolute_heading) {
+//                                        return (false, node, matchedNodeHeadings)
+//                                    } else {
+//                                        let userHeading = fltResult.absolute_heading
+//                                        var diffHeading = [Double]()
+//                                        for mapHeading in matchedNodeHeadings {
+//                                            var diffValue: Double = 0
+//                                            if (userHeading > 270 && (mapHeading >= 0 && mapHeading < 90)) {
+//                                                diffValue = abs(userHeading - (mapHeading+360))
+//                                            } else if (mapHeading > 270 && (userHeading >= 0 && userHeading < 90)) {
+//                                                diffValue = abs(mapHeading - (userHeading+360))
+//                                            } else {
+//                                                diffValue = abs(userHeading - mapHeading)
+//                                            }
+//                                            diffHeading.append(diffValue)
+//                                        }
+//                                        
+//                                        if let minHeading = diffHeading.min() {
+//                                            if minHeading < OlympusConstants.HEADING_RANGE-10 {
+//                                                return (false, node, matchedNodeHeadings)
+//                                            } else {
+//                                                return (false, matchedNode, matchedNodeHeadings)
+//                                            }
+//                                        } else {
+//                                            return (false, matchedNode, matchedNodeHeadings)
+//                                        }
+//                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return (isPpEndPoint, matchedNode, matchedNodeHeadings)
+    }
+    
+    func checkIsAvailablePathPixelData(key: String) -> (Bool, PathPixelData) {
         let emptyPathPixelData = PathPixelData(roadType: [], nodeNumber: [], road: [[]], roadMinMax: [], roadScale: [], roadHeading: [])
         guard let pathPixelData = self.pathPixelData[key] else {
             return (false, emptyPathPixelData)
