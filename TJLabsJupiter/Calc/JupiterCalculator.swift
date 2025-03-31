@@ -38,11 +38,28 @@ class JupiterCalculator {
         })
     }
     
-    static func calculatePhase5(input: FineLocationTrackingInput, completion: @escaping (JupiterCalculatorResults) -> Void) {
+    static func calculatePhase5(input: FineLocationTrackingInput, completion: @escaping (JupiterStableCalculatorResults) -> Void) {
         
     }
     
-    static func calculatePhase6(input: FineLocationTrackingInput, completion: @escaping (JupiterCalculatorResults) -> Void) {
+    static func calculatePhase6(input: FineLocationTrackingInput, trajectoryBuffer: [TrajectoryInfo], nodeCandidateInfo: NodeCandidateInfo, completion: @escaping (JupiterStableCalculatorResults) -> Void) {
+        let postInput = StableFLT(fltInput: input, trajInfoList: trajectoryBuffer, nodeCandidateInfo: nodeCandidateInfo)
+        
+        JupiterNetworkManager.shared.postStableFLT(url: JupiterNetworkConstants.getCalcFltURL(), input: postInput, completion: { statusCode, returnedString, input in
+            print("(CheckJupiter) Phase6 Stable Output : \(statusCode) // \(returnedString)")
+            var output = JupiterStableCalculatorResults(fltResultList: [], fltInput: postInput.fltInput, inputTrajectoryInfo: postInput.trajInfoList, nodeCandidateInfo: postInput.nodeCandidateInfo)
+            if statusCode == 200 {
+                let decoded = decodeFineLocationTrackingOutputList(jsonString: returnedString)
+                if decoded.0 {
+                    output.fltResultList = decoded.1.flt_outputs
+                    completion(output)
+                } else {
+                    
+                }
+            } else {
+                
+            }
+        })
         
     }
     
