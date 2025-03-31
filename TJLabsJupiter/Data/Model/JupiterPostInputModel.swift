@@ -35,6 +35,12 @@ struct FLT {
     var searchInfo: SearchInfo
 }
 
+struct StableFLT {
+    var fltInput: FineLocationTrackingInput
+    var trajInfoList: [TrajectoryInfo]
+    var nodeCandidateInfo: NodeCandidateInfo
+}
+
 // MARK: - OnSpotRecognition
 struct OnSpotRecognitionInput: Encodable {
     var operating_system: String
