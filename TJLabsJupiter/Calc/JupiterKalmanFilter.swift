@@ -29,8 +29,8 @@ class JupiterKalmanFilter {
     }
     
     static func timeUpdate(uvd: UserVelocity, pastUvd: UserVelocity) -> FineLocationTrackingOutput {
-        print("(CheckCurrentResult) : uvd = \(uvd)")
-        print("(CheckCurrentResult) : pastUvd = \(pastUvd)")
+//        print("(CheckCurrentResult) : uvd = \(uvd)")
+//        print("(CheckCurrentResult) : pastUvd = \(pastUvd)")
         
         let length = uvd.length
         let diffHeading = uvd.heading - pastUvd.heading

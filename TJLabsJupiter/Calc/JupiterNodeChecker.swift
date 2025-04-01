@@ -495,6 +495,7 @@ struct JupiterNodeChecker {
         passedNodeMatchedIndex = matchedIndex
         passedNodeCoord = coord
         passedNodeHeadings = headings
+        print("(JupiterNodeChecker) registerPassedNode : passedNode = \(passedNode) // passedNodeMatchedIndex = \(passedNodeMatchedIndex) // passedNodeCoord = \(passedNodeCoord) // passedNodeHeadings = \(passedNodeHeadings)")
         let dx = coord[0] - x
         let dy = coord[1] - y
         distFromNode = sqrt(dx*dx + dy*dy)
