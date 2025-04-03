@@ -9,8 +9,8 @@
 /* Begin PBXBuildFile section */
 		B31D01852D950E0D00D395D0 /* TJLabsResource.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = B31D01842D950E0D00D395D0 /* TJLabsResource.xcframework */; };
 		B31D01862D950E0D00D395D0 /* TJLabsResource.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = B31D01842D950E0D00D395D0 /* TJLabsResource.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
-		B31D04702D9BA8BD00D395D0 /* TJLabsCommon.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = B31D046F2D9BA8BD00D395D0 /* TJLabsCommon.xcframework */; };
-		B31D04712D9BA8BD00D395D0 /* TJLabsCommon.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = B31D046F2D9BA8BD00D395D0 /* TJLabsCommon.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		B31D04F52D9E43D000D395D0 /* TJLabsCommon.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = B31D04F42D9E43D000D395D0 /* TJLabsCommon.xcframework */; };
+		B31D04F62D9E43D000D395D0 /* TJLabsCommon.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = B31D04F42D9E43D000D395D0 /* TJLabsCommon.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		B3EA87582D36623D00372790 /* TJLabsJupiter.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = B3EA874D2D36623C00372790 /* TJLabsJupiter.framework */; };
 /* End PBXBuildFile section */
 
@@ -31,7 +31,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				B31D04712D9BA8BD00D395D0 /* TJLabsCommon.xcframework in Embed Frameworks */,
+				B31D04F62D9E43D000D395D0 /* TJLabsCommon.xcframework in Embed Frameworks */,
 				B31D01862D950E0D00D395D0 /* TJLabsResource.xcframework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
@@ -41,7 +41,7 @@
 
 /* Begin PBXFileReference section */
 		B31D01842D950E0D00D395D0 /* TJLabsResource.xcframework */ = {isa = PBXFileReference; expectedSignature = "AppleDeveloperProgram:G75UAV755N:TJLABS Corp."; lastKnownFileType = wrapper.xcframework; name = TJLabsResource.xcframework; path = ../TJLabsResource/xcframeworks/TJLabsResource.xcframework; sourceTree = "<group>"; };
-		B31D046F2D9BA8BD00D395D0 /* TJLabsCommon.xcframework */ = {isa = PBXFileReference; expectedSignature = "AppleDeveloperProgram:G75UAV755N:TJLABS Corp."; lastKnownFileType = wrapper.xcframework; name = TJLabsCommon.xcframework; path = ../TJLabsCommon/xcframeworks/TJLabsCommon.xcframework; sourceTree = "<group>"; };
+		B31D04F42D9E43D000D395D0 /* TJLabsCommon.xcframework */ = {isa = PBXFileReference; expectedSignature = "AppleDeveloperProgram:G75UAV755N:TJLABS Corp."; lastKnownFileType = wrapper.xcframework; name = TJLabsCommon.xcframework; path = ../TJLabsCommon/xcframeworks/TJLabsCommon.xcframework; sourceTree = "<group>"; };
 		B3EA874D2D36623C00372790 /* TJLabsJupiter.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = TJLabsJupiter.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		B3EA87572D36623D00372790 /* TJLabsJupiterTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TJLabsJupiterTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -77,7 +77,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				B31D04702D9BA8BD00D395D0 /* TJLabsCommon.xcframework in Frameworks */,
+				B31D04F52D9E43D000D395D0 /* TJLabsCommon.xcframework in Frameworks */,
 				B31D01852D950E0D00D395D0 /* TJLabsResource.xcframework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -115,7 +115,7 @@
 		B3EA87AB2D37481E00372790 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				B31D046F2D9BA8BD00D395D0 /* TJLabsCommon.xcframework */,
+				B31D04F42D9E43D000D395D0 /* TJLabsCommon.xcframework */,
 				B31D01842D950E0D00D395D0 /* TJLabsResource.xcframework */,
 			);
 			name = Frameworks;
