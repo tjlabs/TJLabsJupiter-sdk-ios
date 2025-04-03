@@ -145,7 +145,17 @@ class JupiterPhaseController {
 
     
     static func phaseControlInStable(serverResult: FineLocationTrackingOutput, mode: UserMode, inputPhase: Int) -> Int {
-        var phase: Int = 1
+        var phase: Int = inputPhase
+        let phaseBreakSCC = mode == .MODE_VEHICLE ? JupiterPhase.PHASE_BREAK_SCC_DR : JupiterPhase.PHASE_BREAK_SCC_PDR
+        
+        let scc = serverResult.scc
+        
+        if scc < phaseBreakSCC {
+            phase = 1
+        } else if serverResult.x == 0 && serverResult.y == 0 {
+            phase = 1
+        }
+        
         return phase
     }
 }

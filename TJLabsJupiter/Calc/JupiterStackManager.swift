@@ -57,7 +57,7 @@ class JupiterStackManager {
             let currentX = userMask.x
             let currentY = userMask.y
             if (lastIndex == currentIndex || (lastX == currentX && lastY == currentY)) {
-                userUniqueMaskBuffer.popLast()
+                _ = userUniqueMaskBuffer.popLast()
             }
         }
 

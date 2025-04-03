@@ -24,8 +24,8 @@ struct SearchInfo {
 
 // MARK: - Node
 struct NodeCandidateInfo {
-    var isPhaseBreak: Bool
-    var nodeCandidatesInfo: [PassedNodeInfo]
+    var isPhaseBreak: Bool = false
+    var nodeCandidatesInfo: [PassedNodeInfo] = []
 }
 
 struct PassedNodeInfo {

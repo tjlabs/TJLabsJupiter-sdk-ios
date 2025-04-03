@@ -67,13 +67,32 @@ class JupiterRouteTracker {
         let timeDiff = TJLabsUtilFunctions.shared.getCurrentTimeInMillisecondsDouble() - checkStartRouteTrackTimeStamp
         print("(CheckRouteTracking) : timeDiff = \(timeDiff)")
         
+//        if (timeDiff >= sec * JupiterTime.SECONDS_TO_MILLIS && checkStartRouteTrackFlag) {
+//            if bleAvg.count >= 2 {
+//                checkStartRouteTrackFlag = false
+//                print("(CheckRouteTracking) : ble size = \(bleAvg.count)")
+//                check = true
+//            }
+//        }
+        
         if (timeDiff >= sec * JupiterTime.SECONDS_TO_MILLIS && checkStartRouteTrackFlag) {
-            if bleAvg.count >= 2 {
-                checkStartRouteTrackFlag = false
-                print("(CheckRouteTracking) : ble size = \(bleAvg.count)")
-                check = true
+            if (bleAvg.count >= 2) {
+                var bleRssiConditionCount = 0
+                for (_, value) in bleAvg {
+                    if value >= -90 {
+                        bleRssiConditionCount += 1
+                    }
+                    
+                    if (bleRssiConditionCount >= 2) {
+                        checkStartRouteTrackFlag = false
+                        check = true
+                        print("(CheckRouteTracking) start & stop : start -> time = \(TJLabsUtilFunctions.shared.getCurrentTimeInMillisecondsDouble()) // bleRssiConditionCount = \(bleRssiConditionCount) // bleAvg = \(bleAvg)")
+                        break
+                    }
+                }
             }
         }
+        
         print("(CheckRouteTracking) : check = \(check)")
         
         return (check, currentEntranceKey)
@@ -88,7 +107,7 @@ class JupiterRouteTracker {
             let scaledLength = length*scale
             scaledDistance += scaledLength
             var roundedIndex = Int(round(scaledDistance))
-            print("(CheckRouteTracking) : uvd length = \(length) // scale = \(scale) // scaledLength = \(scaledLength) // scaledDistance = \(scaledDistance)")
+            print("(CheckRouteTracking) : uvd index = \(uvd.index) // length = \(length) // scale = \(scale) // scaledLength = \(scaledLength) // scaledDistance = \(scaledDistance)")
             
             guard let routeData = self.entranceRoute[currentEntranceKey] else { return result }
             let entranceRouteLevel = routeData.routeLevel
@@ -100,12 +119,13 @@ class JupiterRouteTracker {
             } else {
                 isLastEntrancePosition = false
             }
-            print("(CheckRouteTracking) : roundedIndex = \(roundedIndex)")
+            print("(CheckRouteTracking) : roundedIndex = \(roundedIndex) // route size = \(entranceRouteCoord.count-1)")
             
             result.level_name = entranceRouteLevel[roundedIndex]
             result.x = entranceRouteCoord[roundedIndex][0]
             result.y = entranceRouteCoord[roundedIndex][1]
             result.absolute_heading = entranceRouteCoord[roundedIndex][2]
+            print("(CheckRouteTracking) routeTrackResult : \(result.building_name) , \(result.level_name) , \(result.x) , \(result.y) , \(result.absolute_heading)")
             return result
         } else {
             return result
@@ -116,9 +136,14 @@ class JupiterRouteTracker {
         var result = curResult
         
         if let bleID = entranceInnerWardID[currentEntranceKey] {
+            print("(CheckRouteTracking) entranceInnerWardID = \(bleID)")
+            print("(CheckRouteTracking) scannedRSSI (1) = \(bleAvg)")
             if let scannedRSSI = bleAvg[bleID] {
+                print("(CheckRouteTracking) scannedRSSI (2) = \(scannedRSSI)")
                 if let thresholdRSSI = entranceInnerWardRSSI[currentEntranceKey] {
+                    print("(CheckRouteTracking) thresholdRSSI = \(thresholdRSSI)")
                     if let wardCoord = entranceInnerWardCoord[currentEntranceKey] {
+                        print("(CheckRouteTracking) wardCoord = \(wardCoord)")
                         let normalizedRSSI = (scannedRSSI - deviceMinRss)*normalizationScale + standardMinRss
                         result.x = wardCoord.x
                         result.y = wardCoord.y
@@ -141,11 +166,13 @@ class JupiterRouteTracker {
     }
     
     func forcedStopRouteTracking(bleAvg: [String: Double], sec: Double) -> Bool {
+        let currentTime = TJLabsUtilFunctions.shared.getCurrentTimeInMillisecondsDouble()
+        print("(CheckRouteTracking) start & stop : stop -> forcedStopRouteTracking // time = \(currentTime), isLastEntrancePosition = \(isLastEntrancePosition)")
         if isLastEntrancePosition && currentEntranceKey != "" {
             if let bleID = entranceInnerWardID[currentEntranceKey] {
                 let scannedRSSI = bleAvg[bleID]
                 if scannedRSSI == nil && checkForcedStopRouteTrackTimeStamp != 0 {
-                    let timeDiff = TJLabsUtilFunctions.shared.getCurrentTimeInMillisecondsDouble() - checkForcedStopRouteTrackTimeStamp
+                    let timeDiff = currentTime - checkForcedStopRouteTrackTimeStamp
                     if timeDiff >= sec*1000 {
                         return true
                     }

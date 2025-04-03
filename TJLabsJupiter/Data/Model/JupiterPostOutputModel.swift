@@ -9,6 +9,12 @@ struct JupiterCalculatorResults {
     var inputSearchInfo: SearchInfo
 }
 
+struct JupiterStableCalculatorResults {
+    var fltResultList: [FineLocationTrackingOutput]
+    var fltInput: FineLocationTrackingInput
+    var inputTrajectoryInfo : [TrajectoryInfo]
+    var nodeCandidateInfo: NodeCandidateInfo
+}
 
 // MARK: - FineLocationTracking
 public struct FineLocationTrackingOutput: Codable, Equatable {
