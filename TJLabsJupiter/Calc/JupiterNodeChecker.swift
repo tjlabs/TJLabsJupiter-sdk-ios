@@ -253,7 +253,7 @@ struct JupiterNodeChecker {
                         matchedIndex: uvdIndex - ((p + 1) * indexScale),
                         heading: currentResultHeading
                     )
-                    return
+                    break
                 }
             }
 
