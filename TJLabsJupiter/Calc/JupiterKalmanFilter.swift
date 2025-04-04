@@ -51,7 +51,6 @@ class JupiterKalmanFilter {
     }
     
     static func drTimeUpdate(region: String, sectorId: Int, uvd: UserVelocity, pastUvd: UserVelocity) -> FineLocationTrackingOutput {
-        var result = FineLocationTrackingOutput()
         var nextTuResult = timeUpdate(uvd: uvd, pastUvd: pastUvd)
         let paddingValues = JupiterMode.PADDING_VALUES_DR
         
@@ -79,6 +78,6 @@ class JupiterKalmanFilter {
         kalmanP += kalmanQ
         headingKalmanP += headingKalmanQ
         
-        return result
+        return nextTuResult
     }
 }
