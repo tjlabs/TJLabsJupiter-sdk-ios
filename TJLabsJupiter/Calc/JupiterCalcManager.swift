@@ -339,6 +339,7 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
     func stopGenerator() {
         rfdGenerator?.stopRfdGeneration()
         uvdGenerator?.stopUvdGeneration()
+        JupiterRssCompensator.saveNormalizationScaleToCache(sector_id: JupiterCalcManager.sectorId)
         stopTimer()
     }
     
@@ -380,7 +381,30 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
                 // RouteTrack Finshid (Force)
                 JupiterCalcManager.isRouteTrack = false
             }
-
+        }
+        
+        if !rfd.ble.isEmpty {
+            let bleAvg = rfd.ble
+            JupiterRssCompensator.refreshWardMinRssi(bleData: bleAvg)
+            JupiterRssCompensator.refreshWardMaxRssi(bleData: bleAvg)
+            let minRssi = JupiterRssCompensator.getMinRssi()
+            let maxRssi = JupiterRssCompensator.getMaxRssi()
+            
+            let diffMinMaxRssi = abs(maxRssi - minRssi)
+            if minRssi <= JupiterRssCompensation.DEVICE_MIN_UPDATE_THRESHOLD {
+                JupiterRssCompensator.deviceMin = minRssi
+            }
+            JupiterRssCompensator.stackTimeAfterResponse()
+            JupiterRssCompensator.estimateNormalizationScale(isGetFirstResponse: JupiterCalcManager.isPossibleReturnJupiterResult(), isIndoor: JupiterCalcManager.isIndoor, currentLevel: JupiterCalcManager.curJupiterPathMatchingResult.level_name, diffMinMaxRssi: diffMinMaxRssi, minRssi: minRssi)
+            if JupiterRssCompensator.isScaleConverged && !JupiterRssCompensator.isScaleSaved {
+                JupiterRssCompensator.saveNormalizationScaleToCache(sector_id: JupiterCalcManager.sectorId)
+                JupiterRssCompensator.isScaleSaved = true
+            }
+            
+        }
+        
+        if !JupiterCalcManager.isIndoor {
+            JupiterRssCompensator.initializeTimeStack()
         }
     }
     
@@ -485,7 +509,11 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
     }
     
     func onParamData(_ manager: TJLabsResource.TJLabsResourceManager, isOn: Bool, data: TJLabsResource.ParameterData?) {
-        //
+        if isOn {
+            if let paramData = data {
+                JupiterRssCompensator.setStandardMinMax(minMax: paramData.standard_rss)
+            }
+        }
     }
     
     func onGeofenceData(_ manager: TJLabsResource.TJLabsResourceManager, isOn: Bool, key: String, data: TJLabsResource.GeofenceData?) {
