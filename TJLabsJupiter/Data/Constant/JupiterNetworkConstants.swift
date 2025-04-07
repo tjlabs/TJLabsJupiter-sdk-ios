@@ -7,7 +7,6 @@ public class JupiterNetworkConstants {
     
     static let USER_LOGIN_SERVER_VERSION = "2024-06-12"
     static let USER_RC_SERVER_VERSION = "2024-06-12"
-    static let USER_SCALE_SERVER_VERSION = "2024-11-14"
     
     static let REC_RFD_SERVER_VERSION = "2024-04-19"
     static let REC_UVD_SERVER_VERSION = "2024-04-19"
