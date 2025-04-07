@@ -35,10 +35,6 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
     static var nodeNumberList = [Int]()
     static var nodeIndex = 0
     static var retry = false
-
-    static var normalizationScale: Double = 1
-    static var deviceMinRss: Double = -99
-    static var standardMinRss: Double = -99
     
     static var isReadyPpResource = false
     static var isReadyEntranceResource = false
@@ -70,7 +66,7 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
         let x = curJupiterResult.x
         let y = curJupiterResult.y
         
-        return FineLocationTrackingInput(user_id: id, mobile_time: TJLabsUtilFunctions.shared.getCurrentTimeInMilliseconds(), sector_id: sectorId, operating_system: os, building_name: buildingName, level_name_list: JupiterBuildingLevelChanager.makeLevelList(sectorId: sectorId, building: buildingName, level: levelName, x: x, y: y, mode: currentUserMode), phase: phase, search_range: searchInfo.searchRange, search_direction_list: searchInfo.searchDirection, normalization_scale: normalizationScale, device_min_rss: Int(deviceMinRss), sc_compensation_list: getScCompensationList(phase: phase), tail_index: searchInfo.tailIndex, head_section_number: headSectionInfo, node_number_list: nodeNumberList, node_index: nodeIndex, retry: retry)
+        return FineLocationTrackingInput(user_id: id, mobile_time: TJLabsUtilFunctions.shared.getCurrentTimeInMilliseconds(), sector_id: sectorId, operating_system: os, building_name: buildingName, level_name_list: JupiterBuildingLevelChanager.makeLevelList(sectorId: sectorId, building: buildingName, level: levelName, x: x, y: y, mode: currentUserMode), phase: phase, search_range: searchInfo.searchRange, search_direction_list: searchInfo.searchDirection, normalization_scale: JupiterRssCompensator.normalizationScale, device_min_rss: Int(JupiterRssCompensator.deviceMinRss), sc_compensation_list: getScCompensationList(phase: phase), tail_index: searchInfo.tailIndex, head_section_number: headSectionInfo, node_number_list: nodeNumberList, node_index: nodeIndex, retry: retry)
     }
     
     static func getJupiterResult() -> JupiterResult {
@@ -364,8 +360,8 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
         }
         
         if JupiterCalcManager.isRouteTrack {
-            let checkFinishRouteTrackResult = JupiterRouteTracker.shared.stopRouteTracking(curResult: JupiterCalcManager.curJupiterResult, bleAvg: rfd.ble, normalizationScale: JupiterCalcManager.normalizationScale, deviceMinRss: JupiterCalcManager.deviceMinRss
-                                                                                           , standardMinRss: JupiterCalcManager.standardMinRss)
+            let checkFinishRouteTrackResult = JupiterRouteTracker.shared.stopRouteTracking(curResult: JupiterCalcManager.curJupiterResult, bleAvg: rfd.ble, normalizationScale: JupiterRssCompensator.normalizationScale, deviceMinRss: JupiterRssCompensator.deviceMinRss
+                                                                                           , standardMinRss: JupiterRssCompensator.standardMinRss)
             if checkFinishRouteTrackResult.0 {
                 print("(CheckRouteTracking) : Route-tracking Finished // \(checkFinishRouteTrackResult.1.building_name) \(checkFinishRouteTrackResult.1.level_name) , [\(checkFinishRouteTrackResult.1.x),\(checkFinishRouteTrackResult.1.y),\(checkFinishRouteTrackResult.1.absolute_heading)]")
                 // RouteTrack Finshid (Normal)
@@ -392,7 +388,7 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
             
             let diffMinMaxRssi = abs(maxRssi - minRssi)
             if minRssi <= JupiterRssCompensation.DEVICE_MIN_UPDATE_THRESHOLD {
-                JupiterRssCompensator.deviceMin = minRssi
+                JupiterRssCompensator.deviceMinRss = minRssi
             }
             JupiterRssCompensator.stackTimeAfterResponse()
             JupiterRssCompensator.estimateNormalizationScale(isGetFirstResponse: JupiterCalcManager.isPossibleReturnJupiterResult(), isIndoor: JupiterCalcManager.isIndoor, currentLevel: JupiterCalcManager.curJupiterPathMatchingResult.level_name, diffMinMaxRssi: diffMinMaxRssi, minRssi: minRssi)
