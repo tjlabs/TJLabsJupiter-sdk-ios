@@ -3,9 +3,9 @@ import Foundation
 import TJLabsCommon
 
 class JupiterRssCompensator {
-    static var deviceMin: Double = -99
-    private static var standardMin: Double = -99
-    private static var standardMax: Double = -60
+    static var deviceMinRss: Double = -99
+    static var standardMinRss: Double = -99
+    static var standardMaxRss: Double = -60
     
     private static var entranceWardRssi = [String: Double]()
     private static var allEntranceWardRssi = [String: Double]()
@@ -18,7 +18,7 @@ class JupiterRssCompensator {
     static var isScaleConverged: Bool = false
     
     private static var timeAfterResponse: Double = 0
-    private static var normalizationScale: Double = 1.0
+    static var normalizationScale: Double = 1.0
     private static var preNormalizationScale: Double = 1.0
     private static var preSmoothedNormalizationScale: Double = 1.0
     private static var scaleQueue = [Double]()
@@ -35,8 +35,8 @@ class JupiterRssCompensator {
     }
     
     static func setStandardMinMax(minMax: [Int]) {
-        standardMin = Double(minMax[0])
-        standardMax = Double(minMax[1])
+        standardMinRss = Double(minMax[0])
+        standardMaxRss = Double(minMax[1])
     }
     
     static func estimateNormalizationScale(isGetFirstResponse: Bool, isIndoor: Bool, currentLevel: String, diffMinMaxRssi: Double, minRssi: Double) {
@@ -46,7 +46,7 @@ class JupiterRssCompensator {
             self.timeStackEst = 0
             if (self.isScaleLoaded) {
                 if (currentLevel != "B0") {
-                    let normalizationScale = calNormalizationScale(standardMin: standardMin, standardMax: standardMax)
+                    let normalizationScale = calNormalizationScale(standardMinRss: standardMinRss, standardMaxRss: standardMaxRss)
                     if (!self.isScaleConverged) {
                         if (normalizationScale.0) {
                             let smoothedScale: Double = smoothNormalizationScale(scale: normalizationScale.1)
@@ -61,7 +61,7 @@ class JupiterRssCompensator {
                 }
             } else {
                 if (!self.isScaleConverged) {
-                    let normalizationScale = calNormalizationScale(standardMin: standardMin, standardMax: standardMax)
+                    let normalizationScale = calNormalizationScale(standardMinRss: standardMinRss, standardMaxRss: standardMaxRss)
                     if (normalizationScale.0) {
                         let smoothedScale: Double = smoothNormalizationScale(scale: normalizationScale.1)
                         self.normalizationScale = smoothedScale
@@ -171,8 +171,8 @@ class JupiterRssCompensator {
     }
     
     static func saveNormalizationScaleToCache(sector_id: Int) {
-        print("(JupiterRssCompensator) Save NormalizationScale : \(normalizationScale)")
-        
+        let scale = normalizationScale
+        print("(JupiterRssCompensator) Save NormalizationScale : \(scale)")
         do {
             let key: String = "JupiterNormalizationScale_\(sector_id)"
             UserDefaults.standard.set(scale, forKey: key)
@@ -237,15 +237,15 @@ class JupiterRssCompensator {
         }
     }
     
-    static func calNormalizationScale(standardMin: Double, standardMax: Double) -> (Bool, Double) {
-        let standardAmplitude: Double = abs(standardMax - standardMin)
+    static func calNormalizationScale(standardMinRss: Double, standardMaxRss: Double) -> (Bool, Double) {
+        let standardAmplitude: Double = abs(standardMaxRss - standardMinRss)
         if (wardMaxRssi.isEmpty || wardMinRssi.isEmpty) {
             return (false, 1.0)
         } else {
             let avgMax = wardMaxRssi.average
             let avgMin = wardMinRssi.average
             
-            deviceMin = avgMax
+            deviceMinRss = avgMax
             let amplitude: Double = abs(avgMax - avgMin)
             
             let digit: Double = pow(10, 4)
@@ -257,7 +257,7 @@ class JupiterRssCompensator {
                 normalizationScale = 0.8
             }
             updateScaleQueue(data: normalizationScale)
-            print("(JupiterRssCompensator) : wardMaxRssi = \(wardMaxRssi) // wardMinRssi = \(wardMinRssi) // standardMax = \(standardMax) // standardMin = \(standardMin) // normalizationScale = \(normalizationScale)")
+            print("(JupiterRssCompensator) : wardMaxRssi = \(wardMaxRssi) // wardMinRssi = \(wardMinRssi) // standardMax = \(standardMaxRss) // standardMin = \(standardMinRss) // normalizationScale = \(normalizationScale)")
             
             return (true, normalizationScale)
         }
