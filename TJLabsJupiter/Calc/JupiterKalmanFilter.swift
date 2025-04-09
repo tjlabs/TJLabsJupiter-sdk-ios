@@ -23,9 +23,14 @@ class JupiterKalmanFilter {
     static var pastHeadingKalmanK: Double = 1
     
     static var tuResult = FineLocationTrackingOutput()
+    static var tuResultNow = FineLocationTrackingOutput()
     
     static func updateTuResult(result: FineLocationTrackingOutput) {
         self.tuResult = result
+    }
+    
+    static func updateTuResultNow(result: FineLocationTrackingOutput) {
+        self.tuResultNow = result
     }
     
     static func timeUpdate(uvd: UserVelocity, pastUvd: UserVelocity) -> FineLocationTrackingOutput {
