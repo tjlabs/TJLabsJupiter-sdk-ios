@@ -2,7 +2,7 @@
 import TJLabsCommon
 import TJLabsResource
 
-class JupiterBuildingLevelChanager {
+class JupiterBuildingLevelChanger {
     static var buildingsAndLevelsMap = [String: [String]]()
     static var levelChangeAreaMap = [String: [[Double]]]()
     static var sectorDRModeArea = [String: DRModeArea]()
