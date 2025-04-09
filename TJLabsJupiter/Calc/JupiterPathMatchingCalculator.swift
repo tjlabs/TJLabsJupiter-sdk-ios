@@ -6,6 +6,7 @@ class JupiterPathMatchingCalculator {
     static var shared = JupiterPathMatchingCalculator()
     
     var pathPixelData = [String: PathPixelData]()
+    var pathPixelDataIsLoaded = [String: PathPixelDataIsLoaded]()
     var entranceMatchingData = [String: [[Double]]]()
     var region: String = JupiterRegion.KOREA.rawValue
     var sectorId: Int = 0
@@ -14,6 +15,10 @@ class JupiterPathMatchingCalculator {
     
     func setPathPixelData(key: String, data: PathPixelData) {
         self.pathPixelData[key] = data
+    }
+    
+    func setPathPixelDataIsLoaded(key: String, data: PathPixelDataIsLoaded) {
+        self.pathPixelDataIsLoaded[key] = data
     }
     
     func setEntranceMatchingData(key: String, data: [[Double]]) {
@@ -67,7 +72,7 @@ class JupiterPathMatchingCalculator {
                     let pathTypeLoaded = mainType[i]
 
                     // Skip this path type if conditions aren't met
-                    if mode == .MODE_VEHICLE && pathTypeLoaded == 0 { continue }
+                    if mode == .MODE_VEHICLE && pathTypeLoaded != 1 { continue }
 
                     // Check if the path is within the bounding box
                     if xPath >= xMin && xPath <= xMax, yPath >= yMin && yPath <= yMax {
@@ -133,7 +138,7 @@ class JupiterPathMatchingCalculator {
                         
                         let pathTypeLoaded = mainType[i]
                         if (mode == .MODE_VEHICLE) {
-                            if (pathTypeLoaded == 0) {
+                            if (pathTypeLoaded != 1) {
                                 continue
                             }
                         }
