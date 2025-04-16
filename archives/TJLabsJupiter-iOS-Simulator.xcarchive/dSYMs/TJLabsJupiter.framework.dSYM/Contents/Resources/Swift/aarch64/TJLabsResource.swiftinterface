@@ -85,6 +85,19 @@ public struct GeofenceData : Swift.Codable {
   public init(from decoder: any Swift.Decoder) throws
 }
 public struct DRModeArea : Swift.Codable {
+  public var number: Swift.Int
+  public var range: [Swift.Double]
+  public var direction: Swift.Double
+  public var nodes: [TJLabsResource.DRModeAreaNode]
+  public init(number: Swift.Int, range: [Swift.Double], direction: Swift.Double, nodes: [TJLabsResource.DRModeAreaNode])
+  public func encode(to encoder: any Swift.Encoder) throws
+  public init(from decoder: any Swift.Decoder) throws
+}
+public struct DRModeAreaNode : Swift.Codable {
+  public var number: Swift.Int
+  public var center_pos: [Swift.Double]
+  public var direction_type: Swift.String
+  public init(number: Swift.Int, center_pos: [Swift.Double], direction_type: Swift.String)
   public func encode(to encoder: any Swift.Encoder) throws
   public init(from decoder: any Swift.Decoder) throws
 }

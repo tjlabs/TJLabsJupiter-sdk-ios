@@ -18,10 +18,12 @@ import _SwiftConcurrencyShims
   public static func getCalcBaseURL() -> Swift.String
   public static func getClientBaseURL() -> Swift.String
   public static func getUserLoginVersion() -> Swift.String
+  public static func getUserRcVersion() -> Swift.String
   public static func getRecRfdServerVersion() -> Swift.String
   public static func getRecUvdServerVersion() -> Swift.String
   public static func getRecUserMaskServerVersion() -> Swift.String
   public static func getUserLoginURL() -> Swift.String
+  public static func getUserRcURL() -> Swift.String
   public static func getRecRfdURL() -> Swift.String
   public static func getRecUvdURL() -> Swift.String
   public static func getRecUserMaskURL() -> Swift.String
