@@ -56,6 +56,9 @@ class JupiterRssCompensator {
                                 self.isScaleConverged = true
                             }
                             self.preNormalizationScale = smoothedScale
+                        } else {
+                            let smoothedScale: Double = smoothNormalizationScale(scale: self.preNormalizationScale)
+                            self.normalizationScale = smoothedScale
                         }
                     }
                 }
