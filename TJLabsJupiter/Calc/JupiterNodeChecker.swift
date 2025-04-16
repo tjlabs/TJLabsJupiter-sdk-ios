@@ -581,4 +581,74 @@ struct JupiterNodeChecker {
             }
         }
     }
+    
+    static func getPaddingValues(mode: UserMode, isPhaseBreak: Bool) -> [Double] {
+        var paddingValues: [Double] = [0, 0, 0, 0]
+        
+        if (isPhaseBreak) {
+            return mode == .MODE_VEHICLE ? JupiterMode.PADDING_VALUES_DR : JupiterMode.PADDING_VALUES_PDR
+        }
+        
+        let directions = linkDirections
+        var isDefault: Bool = true
+        if directions.count == 2 {
+            var xyLimitValue: Double = 30
+            if (mode == .MODE_PEDESTRIAN) {
+                xyLimitValue = 3 // xyLimitValue - 5
+            }
+            if (directions.contains(0) && directions.contains(180)) {
+                paddingValues = [xyLimitValue, 1, xyLimitValue, 1]
+                isDefault = false
+            } else if (directions.contains(90) && directions.contains(270)) {
+                paddingValues = [1, xyLimitValue, 1, xyLimitValue]
+                isDefault = false
+            } else {
+                if let closestDir = determineClosestDirection(for: (directions[0], directions[1])) {
+                    if closestDir == "hor" {
+                        paddingValues = [xyLimitValue/2, 3, xyLimitValue/2, 3]
+                    } else {
+                        paddingValues = [3, xyLimitValue/2, 3, xyLimitValue/2]
+                    }
+                    isDefault = false
+                }
+            }
+        }
+        
+        if (isDefault) {
+            return mode == .MODE_VEHICLE ? JupiterMode.PADDING_VALUES_DR : JupiterMode.PADDING_VALUES_PDR
+        }
+        
+        return paddingValues
+    }
+    
+    static func determineClosestDirection(for angles: (Double, Double)) -> String? {
+        let normalizedAngles = (
+            angles.0.truncatingRemainder(dividingBy: 360),
+            angles.1.truncatingRemainder(dividingBy: 360)
+        )
+
+        let directions: [String: [Double]] = [
+            "hor": [0.0, 180.0],
+            "ver": [90.0, 270.0]
+        ]
+
+        func angularDifference(from angle1: Double, to angle2: Double) -> Double {
+            let diff = abs(angle1 - angle2)
+            return min(diff, 360 - diff)
+        }
+
+        for (directionName, referenceAngles) in directions {
+                let isBothClose = referenceAngles.contains { refAngle1 in
+                    angularDifference(from: normalizedAngles.0, to: refAngle1) <= 40
+                } && referenceAngles.contains { refAngle2 in
+                    angularDifference(from: normalizedAngles.1, to: refAngle2) <= 40
+                }
+
+                if isBothClose {
+                    return directionName
+                }
+            }
+
+        return nil
+    }
 }

@@ -67,23 +67,23 @@ class JupiterStackManager {
         }
     }
 
-    static func stackUserMaskForDisplay(data: UserMask) {
-        userMaskBufferDisplay.append(data)
+    static func stackUserMaskForDisplay(userMask: UserMask) {
+        userMaskBufferDisplay.append(userMask)
         if (userMaskBufferDisplay.count > 300) {
             userMaskBufferDisplay.remove(at: 0)
         }
     }
 
-    static func stackUserMaskPathTrajMatching(data: UserMask) {
+    static func stackUserMaskPathTrajMatching(userMask: UserMask) {
         if (userMaskBufferPathTrajMatching.count > 0) {
             let lastIndex = userMaskBufferPathTrajMatching.last?.index
-            let currentIndex = data.index
+            let currentIndex = userMask.index
             if (lastIndex == currentIndex) {
                 _ = userMaskBufferPathTrajMatching.popLast()
             }
         }
         
-        userMaskBufferPathTrajMatching.append(data)
+        userMaskBufferPathTrajMatching.append(userMask)
         if (userMaskBufferPathTrajMatching.count > DR_INFO_BUFFER_SIZE) {
             userMaskBufferPathTrajMatching.remove(at: 0)
         }
@@ -119,5 +119,76 @@ class JupiterStackManager {
         } else {
             return (false, 360)
         }
+    }
+    
+    static func checkIsNeedPathTrajMatching(recoveryIndex: Int) -> PathMatchingCondition {
+        let th = JupiterSection.SAME_COORD_THRESHOLD
+        let straightTh = JupiterSection.STRAIGHT_SAME_COORD_THRESHOLD
+        
+        var isNeedPathTrajMatching: Bool = false
+        var isNeedPathTrajMatchingInStragiht: Bool = false
+        
+        let inputUserMaskBuffer = userMaskBuffer
+        var userMaskChecker = [UserMask]()
+        if inputUserMaskBuffer.count >= th {
+            var diffX: Int = 0
+            var diffY: Int = 0
+            var diffH: Double = 0
+            var checkCount: Int = 0
+            for i in inputUserMaskBuffer.count-(th-1)..<inputUserMaskBuffer.count {
+                if (inputUserMaskBuffer[i].index) > recoveryIndex {
+                    userMaskChecker.append(inputUserMaskBuffer[i])
+                    diffX += abs(inputUserMaskBuffer[i-1].x - inputUserMaskBuffer[i].x)
+                    diffY += abs(inputUserMaskBuffer[i-1].y - inputUserMaskBuffer[i].y)
+                    diffH += abs(inputUserMaskBuffer[i-1].absolute_heading - inputUserMaskBuffer[i].absolute_heading)
+                    checkCount += 1
+                }
+            }
+            if diffX == 0 && diffY == 0 && diffH == 0 && checkCount >= (th-1) {
+                print("(JupiterStackManager) checkIsNeedPathTrajMatching : userMask = \(userMaskChecker)")
+                isNeedPathTrajMatching = true
+            }
+        }
+        
+        if inputUserMaskBuffer.count >= straightTh {
+            var diffX: Int = 0
+            var diffY: Int = 0
+            var checkCount: Int = 0
+            for i in inputUserMaskBuffer.count-(straightTh-1)..<inputUserMaskBuffer.count {
+                if (inputUserMaskBuffer[i].index) > recoveryIndex {
+                    diffX += abs(inputUserMaskBuffer[i-1].x - inputUserMaskBuffer[i].x)
+                    diffY += abs(inputUserMaskBuffer[i-1].y - inputUserMaskBuffer[i].y)
+                    checkCount += 1
+                }
+            }
+            if diffX == 0 && diffY == 0 && checkCount >= (th-1) {
+                isNeedPathTrajMatchingInStragiht = true
+            }
+        }
+        
+        return PathMatchingCondition(turn: isNeedPathTrajMatching, straight: isNeedPathTrajMatchingInStragiht)
+    }
+    
+    static func checkIsBadCase(recoveryIndex: Int) -> Bool {
+        var isBadCase: Bool = false
+        
+        let inputUserMaskBuffer = userMaskBuffer
+        let th = JupiterSection.SAME_COORD_THRESHOLD*15
+        if inputUserMaskBuffer.count >= th {
+            var diffX: Int = 0
+            var diffY: Int = 0
+            var checkCount: Int = 0
+            for i in inputUserMaskBuffer.count-(th-1)..<inputUserMaskBuffer.count {
+                if (inputUserMaskBuffer[i].index) > recoveryIndex {
+                    diffX += abs(inputUserMaskBuffer[i-1].x - inputUserMaskBuffer[i].x)
+                    diffY += abs(inputUserMaskBuffer[i-1].y - inputUserMaskBuffer[i].y)
+                    checkCount += 1
+                }
+            }
+            if diffX == 0 && diffY == 0 && checkCount >= (th-1) {
+                isBadCase = true
+            }
+        }
+        return isBadCase
     }
 }

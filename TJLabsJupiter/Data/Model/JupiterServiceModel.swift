@@ -8,6 +8,12 @@ public enum JupiterRegion: String {
     case CANADA = "CANADA"
 }
 
+struct xyhs {
+    var x: Double = 0
+    var y: Double = 0
+    var heading: Double = 0
+    var scale: Double = 0
+}
 
 // MARK: - TrajectoryInfo
 struct TrajectoryInfo {
@@ -36,12 +42,20 @@ struct PassedNodeInfo {
     var userHeading: Double
 }
 
-struct xyhs {
-    var x: Double = 0
-    var y: Double = 0
-    var heading: Double = 0
-    var scale: Double = 0
+// MARK: - Info
+struct DRModeRequestInfo {
+    var trajectoryInfo: [TrajectoryInfo]
+    var stableInfo: StableInfo
+    var nodeCandidatesInfo: NodeCandidateInfo
+    var prevNodeInfo: PassedNodeInfo
 }
+
+struct StableInfo {
+    var tail_index: Int
+    var head_section_number: Int
+    var node_number_list: [Int]
+}
+
 
 // MARK: - JupiterResult
 public struct JupiterResult: Codable {

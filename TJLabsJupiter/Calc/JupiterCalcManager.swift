@@ -11,7 +11,6 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
     static var region: String = JupiterRegion.KOREA.rawValue
     static var os: String = CommonConstants.OPERATING_SYSTEM
     static var phase: Int = 1
-    static var isPhaseBreak: Bool = false
     
     static var currentUvd = UserVelocity(user_id: "", mobile_time: 0, index: 0, length: 0, heading: 0, looking: false)
     static var currentUserMask = UserMask(user_id: "", mobile_time: 0, section_number: 0, index: 0, x: 0, y: 0, absolute_heading: 0)
@@ -38,14 +37,21 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
     
     static var isReadyPpResource = false
     static var isReadyEntranceResource = false
-
+    
+    static var isPhaseBreak: Bool = false
     static var isIndoor: Bool = false
     static var isRouteTrack: Bool = false
     static var validity: Bool = false
     static var validityFlag: Int = 0
+    static var isDRMode = false
     static var isVenus = false
     static var isActiveKf = false
-
+    static var isInRecoveryProcess = false
+    static var recoveryIndex = 0
+    static var stableModeInitFlag = true
+    static var isDRModeRqInfoSaved = false
+    static var drModeRequestInfo = DRModeRequestInfo(trajectoryInfo: [], stableInfo: StableInfo(tail_index: -1, head_section_number: 0, node_number_list: []), nodeCandidatesInfo: NodeCandidateInfo(), prevNodeInfo: PassedNodeInfo(nodeNumber: -1, nodeCoord: [], nodeHeadings: [], matchedIndex: 0, userHeading: 0))
+    
     static var curJupiterPathMatchingResult = FineLocationTrackingOutput()
     static var preJupiterPathMatchingResult = FineLocationTrackingOutput()
     static var curJupiterResult = FineLocationTrackingOutput()
@@ -59,6 +65,9 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
     
     private var rfdEmptyMillis: Double = 0
     
+    private var paddingValues = JupiterMode.PADDING_VALUES_DR
+    private var pathMatchingCondition = PathMatchingCondition()
+    
     // MARK: - Static Methods
     static func getJupiterInput() -> FineLocationTrackingInput {
         let buildingName = curJupiterResult.building_name
@@ -66,7 +75,7 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
         let x = curJupiterResult.x
         let y = curJupiterResult.y
         
-        return FineLocationTrackingInput(user_id: id, mobile_time: TJLabsUtilFunctions.shared.getCurrentTimeInMilliseconds(), sector_id: sectorId, operating_system: os, building_name: buildingName, level_name_list: JupiterBuildingLevelChanager.makeLevelList(sectorId: sectorId, building: buildingName, level: levelName, x: x, y: y, mode: currentUserMode), phase: phase, search_range: searchInfo.searchRange, search_direction_list: searchInfo.searchDirection, normalization_scale: JupiterRssCompensator.normalizationScale, device_min_rss: Int(JupiterRssCompensator.deviceMinRss), sc_compensation_list: getScCompensationList(phase: phase), tail_index: searchInfo.tailIndex, head_section_number: headSectionInfo, node_number_list: nodeNumberList, node_index: nodeIndex, retry: retry)
+        return FineLocationTrackingInput(user_id: id, mobile_time: TJLabsUtilFunctions.shared.getCurrentTimeInMilliseconds(), sector_id: sectorId, operating_system: os, building_name: buildingName, level_name_list: JupiterBuildingLevelChanger.makeLevelList(sectorId: sectorId, building: buildingName, level: levelName, x: x, y: y, mode: currentUserMode), phase: phase, search_range: searchInfo.searchRange, search_direction_list: searchInfo.searchDirection, normalization_scale: JupiterRssCompensator.normalizationScale, device_min_rss: Int(JupiterRssCompensator.deviceMinRss), sc_compensation_list: getScCompensationList(phase: phase), tail_index: searchInfo.tailIndex, head_section_number: headSectionInfo, node_number_list: nodeNumberList, node_index: nodeIndex, retry: retry)
     }
     
     static func getJupiterResult() -> JupiterResult {
@@ -165,8 +174,8 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
             
             if JupiterCalcManager.isVenus {
                 if uvd.index % rqIndex == 0 {
-                    phase1(completion: { selectedResult in
-                        JupiterCalcManager.curJupiterResult = selectedResult
+                    phase1(completion: { phase1Result in
+                        self.makeTemporalResult(input: phase1Result, isStableMode: false, mustInSameLink: false, updateType: .NONE, pathMatchingType: .NARROW)
                     })
                 }
             } else {
@@ -181,10 +190,12 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
                     if isNeedUpateAnchorNode {
                         JupiterNodeChecker.updateAnchorNode(fltResult: JupiterCalcManager.curJupiterResult, mode: mode, sectionNumber: JupiterSectionController.sectionNumber)
                     }
+                    self.makeTemporalResult(input: tuResult, isStableMode: true, mustInSameLink: false, updateType: .NONE, pathMatchingType: .NARROW)
                 }
                 
                 let trajectoryBuffer = JupiterTrajectoryCalculator.updateTrajectoryBuffer(mode: mode, uvd: uvd, jupiterResult: JupiterCalcManager.getJupiterResult(), serverResult: JupiterCalcManager.curJupiterResult)
                 let searchInfo = mode == .MODE_VEHICLE ? JupiterTrajectoryCalculator.makeDrSearchInfo(phase: JupiterCalcManager.phase, trajectoryBuffer: trajectoryBuffer, lengthThreshold: JupiterMode.USER_TRAJECTORY_LENGTH_DR) : JupiterTrajectoryCalculator.makePdrSearchInfo(phase: JupiterCalcManager.phase, trajectoryBuffer: trajectoryBuffer, lengthThreshold: JupiterMode.USER_TRAJECTORY_LENGTH_PDR)
+                JupiterCalcManager.searchInfo = searchInfo
 //                print("(CheckJupiter) : serachInfo = \(searchInfo) , phase = \(JupiterCalcManager.phase)")
                 
                 switch (JupiterCalcManager.phase) {
@@ -196,7 +207,7 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
                     }
                 case 3:
                     if uvd.index % rqIndex == 0 {
-                        phase3(trajectoryBuffer: trajectoryBuffer, searchInfo: searchInfo, completion: { selectedResult in
+                        phase3(trajectoryBuffer: trajectoryBuffer, searchInfo: JupiterCalcManager.searchInfo, completion: { selectedResult in
                             JupiterCalcManager.curJupiterResult = selectedResult
                         })
                     }
@@ -211,11 +222,11 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
             }
         }
         
-        let paddingValues = mode == .MODE_VEHICLE ? JupiterMode.PADDING_VALUES_DR : JupiterMode.PADDING_VALUES_PDR
-        let pmResults = JupiterPathMatchingCalculator.shared.pathMatching(region: JupiterPathMatchingCalculator.shared.region, sectorId: JupiterPathMatchingCalculator.shared.sectorId, building: JupiterCalcManager.curJupiterResult.building_name, level: JupiterCalcManager.curJupiterResult.level_name, x: JupiterCalcManager.curJupiterResult.x, y: JupiterCalcManager.curJupiterResult.y, heading: JupiterCalcManager.curJupiterResult.absolute_heading, headingRange: JupiterMode.HEADING_RANGE, isUseHeading: true, mode: mode, paddingValues: paddingValues)
+//        let paddingValues = mode == .MODE_VEHICLE ? JupiterMode.PADDING_VALUES_DR : JupiterMode.PADDING_VALUES_PDR
+        let pmResults = JupiterPathMatchingCalculator.shared.pathMatching(region: JupiterPathMatchingCalculator.shared.region, sectorId: JupiterPathMatchingCalculator.shared.sectorId, building: JupiterCalcManager.curJupiterResult.building_name, level: JupiterCalcManager.curJupiterResult.level_name, x: JupiterCalcManager.curJupiterResult.x, y: JupiterCalcManager.curJupiterResult.y, heading: JupiterCalcManager.curJupiterResult.absolute_heading, headingRange: JupiterMode.HEADING_RANGE, isUseHeading: true, mode: mode, paddingValues: self.paddingValues)
         
-        JupiterCalcManager.pastUvd = uvd
-        JupiterCalcManager.preJupiterResult = JupiterCalcManager.curJupiterResult
+//        JupiterCalcManager.pastUvd = uvd
+//        JupiterCalcManager.preJupiterResult = JupiterCalcManager.curJupiterResult
         
         if JupiterCalcManager.isRouteTrack {
             JupiterCalcManager.curJupiterPathMatchingResult = JupiterCalcManager.curJupiterResult
@@ -254,6 +265,12 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
         })
     }
     
+    private func phaseBreakInPhase4(fltResult: FineLocationTrackingOutput, isUpdatePhaseBreakResult: Bool) {
+        JupiterCalcManager.phase = 1
+        JupiterCalcManager.isPhaseBreak = true
+        uvdGenerator?.updateDrVelocityScale(scale: 1)
+    }
+    
     private func phase5() {
         
     }
@@ -274,8 +291,8 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
     
     private func updateResultFromFlt(jupiterCalculatorResults: JupiterCalculatorResults) -> FineLocationTrackingOutput {
         var selectedResult = JupiterResultSelector.selectBestResult(results: jupiterCalculatorResults.fltResultList)
-        let paddingValues = JupiterCalcManager.currentUserMode == .MODE_VEHICLE ? JupiterMode.PADDING_VALUES_DR : JupiterMode.PADDING_VALUES_PDR
-        let pmResults = JupiterPathMatchingCalculator.shared.pathMatching(region: JupiterPathMatchingCalculator.shared.region, sectorId: JupiterPathMatchingCalculator.shared.sectorId, building: selectedResult.building_name, level: selectedResult.level_name, x: selectedResult.x, y: selectedResult.y, heading: selectedResult.absolute_heading, headingRange: JupiterMode.HEADING_RANGE, isUseHeading: true, mode: JupiterCalcManager.currentUserMode, paddingValues: paddingValues)
+//        let paddingValues = JupiterCalcManager.currentUserMode == .MODE_VEHICLE ? JupiterMode.PADDING_VALUES_DR : JupiterMode.PADDING_VALUES_PDR
+        let pmResults = JupiterPathMatchingCalculator.shared.pathMatching(region: JupiterPathMatchingCalculator.shared.region, sectorId: JupiterPathMatchingCalculator.shared.sectorId, building: selectedResult.building_name, level: selectedResult.level_name, x: selectedResult.x, y: selectedResult.y, heading: selectedResult.absolute_heading, headingRange: JupiterMode.HEADING_RANGE, isUseHeading: true, mode: JupiterCalcManager.currentUserMode, paddingValues: self.paddingValues)
         print("(CheckJupiter) updatedServerResult : pmResults = \(pmResults)")
         
         let pmXyhs: xyhs = pmResults.1
@@ -295,6 +312,173 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
         JupiterCalcManager.preServerResultMobileTime = TJLabsUtilFunctions.shared.getCurrentTimeInMillisecondsDouble()
         
         return selectedResult
+    }
+    
+    private func reloadPathPixelData(key: String) {
+        if let ppDataIsLoaded = JupiterPathMatchingCalculator.shared.pathPixelDataIsLoaded[key] {
+            let isLoaded = ppDataIsLoaded.isLoaded
+            if !isLoaded {
+                tjlabsResourceManager.updatePathPixelData(key: key, URL: ppDataIsLoaded.URL)
+            }
+        }
+    }
+    
+    private func makeTemporalResult(input: FineLocationTrackingOutput, isStableMode: Bool, mustInSameLink: Bool, updateType: UpdateNodeLinkType, pathMatchingType: PathMatchingType) {
+        var result = input
+        var isUseHeading = false
+        if (result.x != 0 || result.y != 0 && result.building_name != "" && result.level_name != "") {
+            let buildingName: String = result.building_name
+            let levelName: String = TJLabsUtilFunctions.shared.removeLevelDirectionString(levelName: result.level_name)
+            result.level_name = levelName
+            var isPmFailed = false
+            
+            if (JupiterCalcManager.currentUserMode == .MODE_PEDESTRIAN) {
+                var headingRange = JupiterMode.HEADING_RANGE
+                var paddings = paddingValues
+                if (pathMatchingType == PathMatchingType.NARROW) {
+                    isUseHeading = true
+                    headingRange -= 10
+                    paddings = Array(repeating: 1.5, count: 4)
+                }
+                let pmResult = JupiterPathMatchingCalculator.shared.pathMatching(region: JupiterCalcManager.region, sectorId: JupiterCalcManager.sectorId, building: buildingName, level: levelName, x: result.x, y: result.y, heading: result.absolute_heading, headingRange: headingRange, isUseHeading: isUseHeading, mode: .MODE_PEDESTRIAN, paddingValues: paddings)
+                
+                if (pmResult.0) {
+                    result.x = pmResult.1.x
+                    result.y = pmResult.1.y
+                    result.absolute_heading = pmResult.1.heading
+                } else {
+                    let key = "\(JupiterCalcManager.region)_\(JupiterCalcManager.sectorId)_\(buildingName)_\(levelName)"
+                    reloadPathPixelData(key: key)
+                    isPmFailed = true
+                }
+                isUseHeading = false
+            } else {
+                isUseHeading = !JupiterCalcManager.isVenus
+                let pmResult = JupiterPathMatchingCalculator.shared.pathMatching(region: JupiterCalcManager.region, sectorId: JupiterCalcManager.sectorId, building: buildingName, level: levelName, x: result.x, y: result.y, heading: result.absolute_heading, headingRange: JupiterMode.HEADING_RANGE, isUseHeading: isUseHeading, mode: .MODE_VEHICLE, paddingValues: paddingValues)
+                
+                if (pmResult.0) {
+                    uvdGenerator?.updateDrVelocityScale(scale: pmResult.1.scale)
+                    result.x = pmResult.1.x
+                    result.y = pmResult.1.y
+                    result.absolute_heading = pmResult.1.heading
+                } else {
+                    let key = "\(JupiterCalcManager.region)_\(JupiterCalcManager.sectorId)_\(buildingName)_\(levelName)"
+                    reloadPathPixelData(key: key)
+                    isPmFailed = true
+                }
+            }
+            
+            
+            if (mustInSameLink && levelName != "B0") {
+                let directions = JupiterNodeChecker.linkDirections
+                let linkCoord = JupiterNodeChecker.linkCoord
+                if (directions.count == 2) {
+                    let MARGIN: Double = 30
+                    if (directions.contains(0) && directions.contains(180)) {
+                        // 이전 y축 값과 현재 y값은 같아야 함
+                        let diffHeading = TJLabsUtilFunctions.shared.compensateDegree(abs(result.absolute_heading - directions[0]))
+                        if !((diffHeading > 90-MARGIN && diffHeading <= 90+MARGIN) || (diffHeading > 270-MARGIN && diffHeading <= 270+MARGIN)) {
+                            result.y = linkCoord[1]
+                        }
+                        
+                    } else if (directions.contains(90) && directions.contains(270)) {
+                        // 이전 x축 값과 현재 x축 값은 같아야 함
+                        let diffHeading = TJLabsUtilFunctions.shared.compensateDegree(abs(result.absolute_heading - directions[0]))
+                        if !((diffHeading > 90-MARGIN && diffHeading <= 90+MARGIN) || (diffHeading > 270-MARGIN && diffHeading <= 270+MARGIN)) {
+                            result.x = linkCoord[0]
+                        }
+                    }
+                }
+            }
+
+            if (isUseHeading && isStableMode && !JupiterCalcManager.isPhaseBreak) {
+                let diffX = result.x - JupiterCalcManager.curJupiterPathMatchingResult.x
+                let diffY = result.y - JupiterCalcManager.curJupiterPathMatchingResult.y
+                let diffNorm = sqrt(diffX*diffX + diffY*diffY)
+                if diffNorm >= 2 {
+                    JupiterKalmanFilter.updateTuResult(result: result)
+                    JupiterKalmanFilter.updateTuResultNow(result: result)
+                }
+            }
+
+            if (isPmFailed) {
+                if (JupiterCalcManager.isActiveKf) {
+                    result = JupiterCalcManager.preJupiterResult
+                    let pmResult = JupiterPathMatchingCalculator.shared.pathMatching(region: JupiterCalcManager.region, sectorId: JupiterCalcManager.sectorId, building: buildingName, level: levelName, x: result.x, y: result.y, heading: result.absolute_heading, headingRange: JupiterMode.HEADING_RANGE, isUseHeading: isUseHeading, mode: .MODE_VEHICLE, paddingValues: paddingValues)
+                    if pmResult.0 {
+                        result.x = pmResult.1.x
+                        result.y = pmResult.1.y
+                    }
+                }
+            }
+
+            if (JupiterCalcManager.isActiveKf) {
+                JupiterNodeChecker.updateNodeAndLinkInfo(uvdIndex: JupiterCalcManager.currentUvd.index, currentResult: result, pastResult: JupiterCalcManager.preJupiterPathMatchingResult, mode: JupiterCalcManager.currentUserMode, updateType: updateType)
+                paddingValues = JupiterNodeChecker.getPaddingValues(mode: JupiterCalcManager.currentUserMode, isPhaseBreak: JupiterCalcManager.isPhaseBreak)
+            }
+
+            JupiterCalcManager.currentUserMask = UserMask(user_id: JupiterCalcManager.id,
+                                                          mobile_time: TJLabsUtilFunctions.shared.getCurrentTimeInMilliseconds(),
+                                                          section_number: JupiterSectionController.sectionNumber,
+                                                          index: JupiterCalcManager.currentUvd.index,
+                                                          x: Int(result.x), y: Int(result.y),
+                                                          absolute_heading: result.absolute_heading)
+            JupiterStackManager.stackUserMaskPathTrajMatching(userMask: JupiterCalcManager.currentUserMask)
+            
+            if (!JupiterCalcManager.isDRMode) {
+                JupiterCalcManager.isDRMode = JupiterBuildingLevelChanger.checkInSectorDRModeArea(fltResult: result, passedNodeInfo: JupiterNodeChecker.currentPassedNodeInfo)
+            } else {
+                JupiterCalcManager.isDRMode = JupiterBuildingLevelChanger.checkInSectorDRModeArea(fltResult: result, passedNodeInfo: JupiterNodeChecker.currentPassedNodeInfo)
+                if (!JupiterCalcManager.isDRMode) {
+                    JupiterCalcManager.isDRModeRqInfoSaved = false
+                    JupiterCalcManager.drModeRequestInfo = DRModeRequestInfo(trajectoryInfo: [], stableInfo: StableInfo(tail_index: -1, head_section_number: 0, node_number_list: []), nodeCandidatesInfo: NodeCandidateInfo(), prevNodeInfo: PassedNodeInfo(nodeNumber: -1, nodeCoord: [], nodeHeadings: [], matchedIndex: 0, userHeading: 0))
+                }
+            }
+
+            if (isStableMode) {
+                if (JupiterCalcManager.stableModeInitFlag) {
+                    JupiterSectionController.anchorTailIndex = result.index
+                    JupiterCalcManager.stableModeInitFlag = false
+                }
+
+                JupiterDataBatchSender.sendUserMask(userMask: JupiterCalcManager.currentUserMask)
+                JupiterStackManager.stackUserMask(userMask: JupiterCalcManager.currentUserMask)
+                JupiterStackManager.stackUserUniqueMask(userMask: JupiterCalcManager.currentUserMask)
+                JupiterStackManager.stackUserUniqueMask(userMask: JupiterCalcManager.currentUserMask)
+                JupiterStackManager.stackUserMaskForDisplay(userMask: JupiterCalcManager.currentUserMask)
+
+
+                if (JupiterCalcManager.isInRecoveryProcess) {
+                    JupiterCalcManager.isInRecoveryProcess = false
+                    JupiterCalcManager.recoveryIndex = JupiterCalcManager.currentUvd.index
+                    pathMatchingCondition = PathMatchingCondition()
+                } else {
+                    if (JupiterCalcManager.currentUserMode == .MODE_PEDESTRIAN) {
+                        pathMatchingCondition = JupiterStackManager.checkIsNeedPathTrajMatching(recoveryIndex: JupiterCalcManager.recoveryIndex)
+                    } else {
+                        if (JupiterCalcManager.isDRMode){
+                            if(JupiterStackManager.checkIsBadCase(recoveryIndex: JupiterCalcManager.recoveryIndex) && !JupiterCalcManager.isPhaseBreak) {
+                                if (JupiterBuildingLevelChanger.checkCoordInSectorDRModeArea(fltResult: result)) {
+                                    phaseBreakInPhase4(fltResult: result, isUpdatePhaseBreakResult: true)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            JupiterCalcManager.curJupiterResult = result
+
+            if (!JupiterMode.DEFAULT_HEADINGS.contains(result.absolute_heading)) {
+                let diffX = input.x - result.x
+                let diffY = input.y - result.y
+                let diffNorm = sqrt(diffX*diffX + diffY*diffY)
+                if (diffNorm >= 2) {
+                    JupiterKalmanFilter.updateTuResult(result: result)
+                    JupiterKalmanFilter.updateTuResultNow(result: result)
+                }
+            }
+        }
     }
     
     // MARK: - Set REC length
@@ -338,8 +522,6 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
         JupiterRssCompensator.saveNormalizationScaleToCache(sector_id: JupiterCalcManager.sectorId)
         stopTimer()
     }
-    
-    // MARK: - Send Data to REC
 
     // MARK: - RFDGeneratorDelegate Methods
     func onRfdResult(_ generator: TJLabsCommon.RFDGenerator, receivedForce: TJLabsCommon.ReceivedForce) {
@@ -407,7 +589,6 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
     func onRfdError(_ generator: TJLabsCommon.RFDGenerator, code: Int, msg: String) {
         //
     }
-    
     func onRfdEmptyMillis(_ generator: TJLabsCommon.RFDGenerator, time: Double) {
         rfdEmptyMillis = time
     }
@@ -433,15 +614,6 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
         JupiterStackManager.stackUnitDRInfo(unitDRInfo: userVelocity)
         calcJupiterResult(mode: mode, uvd: userVelocity)
         
-        if JupiterCalcManager.isActiveKf {
-            JupiterNodeChecker.updateNodeAndLinkInfo(uvdIndex: JupiterCalcManager.currentUvd.index, currentResult: JupiterCalcManager.curJupiterPathMatchingResult, pastResult: JupiterCalcManager.preJupiterPathMatchingResult, mode: JupiterCalcManager.currentUserMode, updateType: .STABLE)
-            
-            JupiterCalcManager.currentUserMask = UserMask(user_id: JupiterCalcManager.id, mobile_time: currentTime, section_number: JupiterSectionController.sectionNumber, index: JupiterCalcManager.currentUvd.index, x: Int(JupiterCalcManager.curJupiterPathMatchingResult.x), y: Int(JupiterCalcManager.curJupiterPathMatchingResult.y), absolute_heading: JupiterCalcManager.curJupiterPathMatchingResult.absolute_heading)
-            JupiterDataBatchSender.sendUserMask(userMask: JupiterCalcManager.currentUserMask)
-            JupiterStackManager.stackUserMask(userMask: JupiterCalcManager.currentUserMask)
-            JupiterStackManager.stackUserUniqueMask(userMask: JupiterCalcManager.currentUserMask)
-        }
-        
         JupiterCalcManager.pastUvd = userVelocity
         JupiterCalcManager.preJupiterResult = JupiterCalcManager.curJupiterResult
         JupiterCalcManager.preJupiterPathMatchingResult = JupiterCalcManager.curJupiterPathMatchingResult
@@ -456,7 +628,7 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
     // MARK: - TJLabsResourceManagerDelegate Methods
     func onBuildingLevelData(_ manager: TJLabsResource.TJLabsResourceManager, isOn: Bool, buildingLevelData: [String : [String]]) {
         if isOn {
-            JupiterBuildingLevelChanager.setBuildingLevelData(buildingLevel: buildingLevelData)
+            JupiterBuildingLevelChanger.setBuildingLevelData(buildingLevel: buildingLevelData)
         }
     }
     
@@ -472,7 +644,11 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
     }
     
     func onPathPixelDataLoaded(_ manager: TJLabsResource.TJLabsResourceManager, isOn: Bool, key: String, data: TJLabsResource.PathPixelDataIsLoaded?) {
-        //
+        if isOn {
+            if let ppDataIsLoaded = data {
+                JupiterPathMatchingCalculator.shared.setPathPixelDataIsLoaded(key: key, data: ppDataIsLoaded)
+            }
+        }
     }
     
     func onBuildingLevelImageData(_ manager: TJLabsResource.TJLabsResourceManager, isOn: Bool, key: String, data: UIImage?) {
@@ -516,8 +692,10 @@ class JupiterCalcManager: RFDGeneratorDelegate, UVDGeneratorDelegate, TJLabsReso
         if isOn {
             if let geofenceData = data {
                 let levelChangeArea = geofenceData.levelChangeArea
+                let sectorDrModeArea = geofenceData.drModeArea
                 let entranceMatchingArea = geofenceData.entranceMatchingArea
-                JupiterBuildingLevelChanager.setLevelChangeArea(key: key, data: levelChangeArea)
+                JupiterBuildingLevelChanger.setLevelChangeArea(key: key, data: levelChangeArea)
+                JupiterBuildingLevelChanger.setSectorDRModeArea(key: key, data: sectorDrModeArea)
                 JupiterPathMatchingCalculator.shared.setEntranceMatchingData(key: key, data: entranceMatchingArea)
             }
         }

@@ -67,6 +67,15 @@ public class JupiterManager {
                     group.leave()
                 }
             }
+            ,{ [self] group in
+                group.enter()
+                JupiterRssCompensator.loadRssiCompensationParam(sector_id: sectorId, device_model: deviceModel, os_version: deviceOsVersion, completion: { success, _, msg in
+                    if !success {
+                        self.delegate?.onJupiterError(0, msg)
+                    }
+                })
+                group.leave()
+            }
             // Add Another Group
 //            ,{ group in
 //                group.enter()
