@@ -11,6 +11,7 @@ public class JupiterNetworkConstants {
     static let REC_RFD_SERVER_VERSION = "2024-04-19"
     static let REC_UVD_SERVER_VERSION = "2024-04-19"
     static let REC_USER_MASK_SERVER_VERSION = "2024-04-19"
+    static let REC_MOBILE_RESULT_SERVER_VERSION = "2024-04-19"
 
     static let CALC_FLT_SERVER_VERSION = "2024-12-12"
     static let CALC_OSR_SERVER_VERSION = "2024-08-30"
@@ -86,6 +87,10 @@ public class JupiterNetworkConstants {
     
     public static func getRecUserMaskServerVersion() -> String {
         return REC_USER_MASK_SERVER_VERSION
+    }
+    
+    public static func getRecMobileResultServerVersion() -> String {
+        return REC_MOBILE_RESULT_SERVER_VERSION
     }
     
     public static func getUserLoginURL() -> String {
