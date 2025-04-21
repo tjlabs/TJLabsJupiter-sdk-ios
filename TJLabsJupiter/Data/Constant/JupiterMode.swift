@@ -35,5 +35,7 @@ class JupiterMode {
     
     static let DR_HEADING_CORR_NUM_IDX: Int = 10
     static let HEADING_UNCERTANTIY: Double = 2.0
+    
+    static let SLEEP_THRESHOLD: Double = 600 * 1000
 }
 

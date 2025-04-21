@@ -9,4 +9,11 @@ class JupiterSection {
     static let STRAIGHT_SAME_COORD_THRESHOLD: Int = 6
     static let MAGNETIC_NORTH_THRESHOLD = 100
     static let MAGNETIC_COMPENSATION_DEGREE = 180 // LG : 180 Tips : -20
+    
+    static let PIXEL_LENGTH_TO_FIND_NODE: Double = 20
+
+    static let DR_INFO_BUFFER_SIZE: Int = 60 // 30
+    static let DR_BUFFER_SIZE_FOR_STRAIGHT: Int = 10 // COEX 12 // DS 6 //default 10 // tips : 4
+    static let DR_BUFFER_SIZE_FOR_HEAD_STRAIGHT: Int = 3
+    static let DR_HEADING_CORR_NUM_IDX: Int = 10
 }
