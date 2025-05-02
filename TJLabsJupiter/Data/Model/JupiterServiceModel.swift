@@ -18,13 +18,13 @@ struct xyhs {
 // MARK: - TrajectoryInfo
 struct TrajectoryInfo {
     var uvd: UserVelocity
-    var jupiterResult: JupiterResult
+    var jupiterResult: FineLocationTrackingOutput
     var serverResult: FineLocationTrackingOutput
 }
 
 struct SearchInfo {
     var searchRange: [Int] = []
-    var searchDirection: [Int] = [0, 90, 180, 270]
+    var searchDirection: [Int] = []
     var tailIndex: Int = 1
 }
 

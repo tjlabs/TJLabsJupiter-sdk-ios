@@ -55,6 +55,15 @@ public struct FineLocationTrackingOutputList: Codable {
     public var flt_outputs: [FineLocationTrackingOutput]
 }
 
+// MARK: - JupiterRecoverResults
+struct JupiterRecoveryResults {
+    var fltResult: FineLocationTrackingOutput
+    var fltInput: FineLocationTrackingInput
+    var inputTrajectoryInfo: [TrajectoryInfo]
+    var nodeCandidateInfo: NodeCandidateInfo
+    var preFltReuslt: FineLocationTrackingOutput
+}
+
 // MARK: - OnSpotRecognition
 public struct OnSpotRecognitionOutput: Codable {
     public var mobile_time: Int
