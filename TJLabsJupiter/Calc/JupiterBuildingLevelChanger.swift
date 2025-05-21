@@ -10,6 +10,18 @@ class JupiterBuildingLevelChanger {
     static var currentDRModeArea = DRModeArea(number: -1, range: [], direction: 0, nodes: [])
     static var currentDRModeAreaNodeNumber: Int = -1
     
+    static var buildingLevelChangedTime: Double = 0
+    static var isDetermineSpot: Bool = false
+    static var updatePositionInDRArea = [Double]()
+    static var spotCutIndex: Int = 0
+    static private var travelingOsrDistance: Double = 0
+    static private var lastSpotId: Int = 0
+    static private var currentSpot: Int = 0
+    static private var buildingsAndLevels = [String: [String]]()
+    static private var phase2Range = [Int]()
+    static private var phase2Direction = [Int]()
+    static private var preOutputMobileTime: Double = 0
+    
     init() { }
     
     static func setBuildingLevelData(buildingLevel: [String: [String]]) {
