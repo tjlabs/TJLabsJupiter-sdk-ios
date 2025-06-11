@@ -5,27 +5,146 @@ class JupiterTrajectoryCalculator {
     private static var trajectoryBuffer = [TrajectoryInfo]()
     private static let EXTRACT_SECTION_RQ_SIZE = 7
     
-    static func updateTrajectoryBuffer(mode: UserMode, uvd: UserVelocity, jupiterResult: JupiterResult, serverResult: FineLocationTrackingOutput) -> [TrajectoryInfo] {
-        let trajectoryInfo = TrajectoryInfo(uvd: uvd, jupiterResult: jupiterResult, serverResult: serverResult)
-        trajectoryBuffer.append(trajectoryInfo)
+    private static var pastTrajectoryInfo = [TrajectoryInfo]()
+    private static var pastSearchInfo = SearchInfo()
+    private static var pastMatchedDirection: Int = 0
+    private static var accumulatedLengthWhenPhase2: Double = 0
+    
+    // Trajectory Compensation
+    private static var defaultTrajCompensationArray: [Double] = [0.8, 1.0, 1.2]
+    private static var trajCompensation: Double = 1.0
+    private static var trajCompensationBadCount: Int = 0
+    private static var isFltRequested: Bool = false
+    private static var fltRequestTime: Int = 0
+    
+    private static var sendFailUvdIndexes = [Int]()
+    private static var isNeedRemoveIndexSendFailArray: Bool = false
+    private static var validIndex: Int = 0
+    
+    private static var isNeedTrajCheck: Bool = false
+    
+    static func setIsNeedTrajCheck(flag: Bool) {
+        isNeedTrajCheck = flag
+    }
+    
+    static func initTrajectoryBuffer() {
+        trajectoryBuffer = [TrajectoryInfo]()
+    }
+    
+    private static func checkTrajectoryInfo(mode: UserMode, isPhaseBreak: Bool, isBecomeForeground: Bool, isGetFirstResponse: Bool, timeForInit: Double) {
+        var isNeedAllClear = false
+        let trajectoryLength = mode == .MODE_VEHICLE ? JupiterMode.USER_TRAJECTORY_LENGTH_DR : JupiterMode.USER_TRAJECTORY_LENGTH_PDR
         
-        var cumulatedLength: Double = 0
-        var cutoffIndex: Int = 0
+        if isNeedTrajCheck {
+            if (isPhaseBreak) {
+                let cutIdx = Int(ceil(trajectoryLength*0.5))
+                let newTraj = getTrajectoryFromLast(from: trajectoryBuffer, N: cutIdx)
+                if (newTraj.count > 1) {
+                    for i in 1..<newTraj.count {
+                        let diffX = abs(newTraj[i].jupiterResult.x - newTraj[i-1].jupiterResult.x)
+                        let diffY = abs(newTraj[i].jupiterResult.y - newTraj[i-1].jupiterResult.y)
+                        if (sqrt(diffX*diffX + diffY*diffY) > 3) {
+                            isNeedAllClear = true
+                            break
+                        }
+                    }
+                }
+                trajectoryBuffer = newTraj
+            }
+            isNeedTrajCheck = false
+        } else if isBecomeForeground {
+            JupiterStateManager.isBecomeForeground = false
+            isNeedAllClear = true
+        } else if isGetFirstResponse && timeForInit < JupiterTime.TIME_INIT_THRESHOLD {
+            isNeedAllClear = true
+        }
+        
+        if isNeedAllClear {
+            trajectoryBuffer = [TrajectoryInfo]()
+        }
+    }
+    
+    static func updateTrajectoryBuffer(phase: Int, isDetermineSpot: Bool, mode: UserMode, uvd: UserVelocity, spotCutIndex: Int,
+                                       jupiterResult : FineLocationTrackingOutput,
+                                       serverResult : FineLocationTrackingOutput) -> (Bool, [TrajectoryInfo]) {
+        let trajectoryInfo = TrajectoryInfo(uvd: uvd, jupiterResult: jupiterResult, serverResult: serverResult)
+        checkTrajectoryInfo(mode: mode, isPhaseBreak: JupiterStateManager.isPhaseBreak, isBecomeForeground: JupiterStateManager.isBecomeForeground, isGetFirstResponse: JupiterStateManager.isGetFirstResponse, timeForInit: JupiterTime.TIME_INIT)
+        var trajectoryBufferCopy = trajectoryBuffer
+        trajectoryBufferCopy.append(trajectoryInfo)
+        
         let cumulatedLengthThreshold: Double = mode == .MODE_PEDESTRIAN ? JupiterMode.USER_TRAJECTORY_LENGTH_PDR : JupiterMode.USER_TRAJECTORY_LENGTH_DR
         
-        for i in stride(from: trajectoryBuffer.count - 1, through: 0, by: -1) {
-            cumulatedLength += trajectoryBuffer[i].uvd.length
-            if cumulatedLength > cumulatedLengthThreshold {
-                cutoffIndex = i
-                break
+        var isNeedAllClear: Bool = false
+        if mode == .MODE_PEDESTRIAN {
+            let controlPdrResult = controlPdrTrajectoryInfo()
+            isNeedAllClear = controlPdrResult.0
+            trajectoryBufferCopy = controlPdrResult.1
+        } else {
+            let controlDrResult = controlDrTrajectoryInfo(phase: phase, trajectoryBufferInput: trajectoryBufferCopy, isDetermineSpot: isDetermineSpot, spotCutIndex: spotCutIndex, lengthCondition: cumulatedLengthThreshold)
+            isNeedAllClear = controlDrResult.0
+            trajectoryBufferCopy = controlDrResult.1
+        }
+        
+        trajectoryBuffer = trajectoryBufferCopy
+        return (isNeedAllClear, trajectoryBufferCopy)
+    }
+    
+    private static func controlPdrTrajectoryInfo() -> (Bool, [TrajectoryInfo]) {
+        return (false, [])
+    }
+    
+    private static func controlDrTrajectoryInfo(phase: Int, trajectoryBufferInput: [TrajectoryInfo],
+                                                isDetermineSpot: Bool, spotCutIndex: Int, lengthCondition: Double) -> (Bool, [TrajectoryInfo]) {
+        var trajectoryBufferForDr = trajectoryBufferInput
+        var isNeedAllClear = false
+        
+        if phase != JupiterPhase.PHASE_2 {
+            if isDetermineSpot {
+                let newTraj = getTrajectoryFromLast(from: trajectoryBufferForDr, N: spotCutIndex)
+                accumulatedLengthWhenPhase2 = calculateTrajectoryLength(trajectoryBuffer: newTraj)
+                JupiterBuildingLevelChanger.isDetermineSpot = false
+                JupiterBuildingLevelChanger.updatePositionInDRArea = [Double]()
+            } else {
+                var trajLength = calculateTrajectoryLength(trajectoryBuffer: trajectoryBufferForDr)
+                
+                if trajLength > lengthCondition {
+                    trajectoryBufferForDr.remove(at: 0)
+                }
+            }
+            
+            if !trajectoryBufferForDr.isEmpty {
+                let isTailIndexSendFail = checkIsTailIndexSendFail(trajectoryInfo: trajectoryBufferForDr, sendFailUvdIndexes: sendFailUvdIndexes)
+                if (isTailIndexSendFail) {
+                    let validTrajectoryInfoResult = getValidTrajectory(trajectoryInfo: trajectoryBufferForDr, sendFailUvdIndexes: sendFailUvdIndexes, mode: .MODE_VEHICLE)
+                    if (!validTrajectoryInfoResult.0.isEmpty) {
+                        let trajLength = calculateTrajectoryLength(trajectoryBuffer: validTrajectoryInfoResult.0)
+                        if (trajLength > 10) {
+                            trajectoryBufferForDr = validTrajectoryInfoResult.0
+                            validIndex = validTrajectoryInfoResult.1
+                            isNeedRemoveIndexSendFailArray = true
+                        } else {
+                            // Phase 깨줘야한다
+                            isNeedAllClear = true
+                        }
+                    } else {
+                        // Phase 깨줘야한다
+                        isNeedAllClear = true
+                    }
+                }
             }
         }
-
-        if cutoffIndex < trajectoryBuffer.count {
-            trajectoryBuffer = Array(trajectoryBuffer[cutoffIndex..<trajectoryBuffer.count])
+        
+        if isNeedAllClear {
+            trajectoryBufferForDr = [TrajectoryInfo]()
         }
-
-        return trajectoryBuffer
+        
+        return (isNeedAllClear, trajectoryBufferForDr)
+    }
+    
+    static func setPastInfo(trajInfo: [TrajectoryInfo], searchInfo: SearchInfo, matchedDirection: Int) {
+        pastTrajectoryInfo = trajInfo
+        pastSearchInfo = searchInfo
+        pastMatchedDirection = matchedDirection
     }
     
     static func makePdrSearchInfo(phase: Int, trajectoryBuffer: [TrajectoryInfo], lengthThreshold: Double) -> SearchInfo {
@@ -84,8 +203,73 @@ class JupiterTrajectoryCalculator {
         return searchInfo
     }
     
-    static func makeDrSearchInfo(phase: Int, trajectoryBuffer: [TrajectoryInfo], lengthThreshold: Double) -> SearchInfo {
-        return SearchInfo()
+    static func makeDrSearchInfo(phase: Int, isPhaseBreak: Bool, trajectoryBuffer: [TrajectoryInfo]) -> SearchInfo {
+        var searchInfo = SearchInfo()
+        if (trajectoryBuffer.isEmpty) { return searchInfo }
+
+        var userX = trajectoryBuffer[trajectoryBuffer.count-1].jupiterResult.x
+        var userY = trajectoryBuffer[trajectoryBuffer.count-1].jupiterResult.y
+
+        let serverX = trajectoryBuffer[trajectoryBuffer.count-1].serverResult.x
+        let serverY = trajectoryBuffer[trajectoryBuffer.count-1].serverResult.y
+
+        let buildingName = trajectoryBuffer[trajectoryBuffer.count-1].serverResult.building_name
+        let levelName = trajectoryBuffer[trajectoryBuffer.count-1].serverResult.level_name
+
+        var uvdRawHeading = [Double]()
+        var uvdHeading = [Double]()
+        
+        for value in trajectoryBuffer {
+            uvdRawHeading.append(value.uvd.heading)
+            uvdHeading.append(TJLabsUtilFunctions.shared.compensateDegree(value.uvd.heading))
+        }
+        
+        if (phase != JupiterPhase.PHASE_2 && phase < JupiterPhase.PHASE_4) {
+            searchInfo.tailIndex = trajectoryBuffer[0].uvd.index
+            
+            let paddingValue = JupiterMode.USER_TRAJECTORY_LENGTH_DR*1.2
+            let trajLength = calculateTrajectoryLength(trajectoryBuffer: trajectoryBuffer)
+            
+            if (isPhaseBreak) {
+                userX = serverX
+                userY = serverY
+            }
+            
+            let searchRange: [Double] = [userX - paddingValue, userY - paddingValue, userX + paddingValue, userY + paddingValue]
+            searchInfo.searchRange = searchRange.map { Int($0) }
+        
+            let ppHeadings = JupiterPathMatchingCalculator.shared.getPathMatchingHeadings(region: JupiterPathMatchingCalculator.shared.region, sectorId: JupiterPathMatchingCalculator.shared.sectorId, building: buildingName, level: levelName, x: userX, y: userY, paddingValue: paddingValue, mode: .MODE_VEHICLE)
+            var searchHeadings: [Double] = []
+            if (trajLength <= 30) {
+                searchHeadings = ppHeadings
+            } else {
+                let headingLeastChangeSection = extractSectionWithLeastChange(inputArray: uvdRawHeading, requiredSize: 7)
+                if (headingLeastChangeSection.isEmpty) {
+                    let diffHeadingHeadTail = abs(uvdRawHeading[uvdRawHeading.count-1] - uvdRawHeading[0])
+                    if (diffHeadingHeadTail < 5) {
+                        for ppHeading in ppHeadings {
+                            let defaultHeading = ppHeading - diffHeadingHeadTail
+                            searchHeadings.append(TJLabsUtilFunctions.shared.compensateDegree(defaultHeading))
+                        }
+                    } else {
+                        for ppHeading in ppHeadings {
+                            let defaultHeading = ppHeading - diffHeadingHeadTail
+                            searchHeadings.append(TJLabsUtilFunctions.shared.compensateDegree(defaultHeading))
+                        }
+                    }
+                } else {
+                    let headingForCompensation = headingLeastChangeSection.average - uvdRawHeading[0]
+                    for ppHeading in ppHeadings {
+                        searchHeadings.append(TJLabsUtilFunctions.shared.compensateDegree(ppHeading - headingForCompensation))
+                    }
+                }
+            }
+            
+            let uniqueSearchHeadings = Array(Set(searchHeadings))
+            searchInfo.searchDirection = uniqueSearchHeadings.map { Int($0) }
+        }
+        
+        return searchInfo
     }
     
     static func extractSectionWithLeastChange(inputArray: [Double], requiredSize: Int) -> [Double] {
@@ -231,5 +415,113 @@ class JupiterTrajectoryCalculator {
         }
         let headingLeastChangeSection = extractSectionWithLeastChange(inputArray: uvdRawHeading, requiredSize: 7)
         return headingLeastChangeSection.isEmpty ? false : true
+    }
+    
+    static func updateTrajCompensationArray(result: FineLocationTrackingOutput) {
+        if (self.isFltRequested) {
+            let compensationCheckTime = abs(result.mobile_time - self.fltRequestTime)
+            if (compensationCheckTime < 100) {
+                if (result.scc < 0.55) {
+                    self.trajCompensationBadCount += 1
+                } else {
+                    if (result.scc > 0.6) {
+                        let digit: Double = pow(10, 4)
+                        self.trajCompensation = round((result.sc_compensation*digit)/digit)
+                    }
+                    self.trajCompensationBadCount = 0
+                }
+                if (self.trajCompensationBadCount > 1) {
+                    self.trajCompensationBadCount = 0
+                    self.isFltRequested = false
+                }
+            } else if (compensationCheckTime > 3000) {
+                self.isFltRequested = false
+            }
+        }
+    }
+    
+    static func getValidTrajectory(trajectoryInfo: [TrajectoryInfo], sendFailUvdIndexes: [Int], mode: UserMode) -> ([TrajectoryInfo], Int) {
+        var result = [TrajectoryInfo]()
+        var isFindValidIndex: Bool = false
+        var validIndex: Int = 0
+        var validUvdIndex: Int = trajectoryInfo[0].uvd.index
+        
+        for i in 0..<trajectoryInfo.count{
+            let uvdIndex = trajectoryInfo[i].uvd.index
+            let uvdLookingFlag = mode == .MODE_VEHICLE ? true : trajectoryInfo[i].uvd.looking
+
+            if !sendFailUvdIndexes.contains(uvdIndex) && uvdLookingFlag {
+                isFindValidIndex = true
+                validIndex = i
+                validUvdIndex = uvdIndex
+                break
+            }
+        }
+        if (isFindValidIndex) {
+            for i in validIndex..<trajectoryInfo.count {
+                result.append(trajectoryInfo[i])
+            }
+        }
+        return (result, validUvdIndex)
+    }
+    
+    static func getTrajCompensationArray(mode: UserMode, currentTime: Int, trajLength: Double) -> [Double] {
+        var trajCompensationArray: [Double] = [trajCompensation]
+        let lengthCondition = mode == .MODE_VEHICLE ? JupiterMode.USER_TRAJECTORY_LENGTH_DR : JupiterMode.USER_TRAJECTORY_LENGTH_PDR
+        if (trajLength < lengthCondition) {
+            trajCompensationArray = [1.01]
+        } else {
+            if (isFltRequested) {
+                trajCompensationArray = [1.01]
+            } else {
+                trajCompensationArray = defaultTrajCompensationArray
+                fltRequestTime = currentTime
+                isFltRequested = true
+            }
+        }
+        return trajCompensationArray
+    }
+    
+    static func getTrajectoryFromLast(from trajectoryInfo: [TrajectoryInfo], N: Int) -> [TrajectoryInfo] {
+        let size = trajectoryInfo.count
+        guard size >= N else {
+            return trajectoryInfo
+        }
+        
+        let startIndex = size - N
+        let endIndex = size
+        
+        var result: [TrajectoryInfo] = []
+        for i in startIndex..<endIndex {
+            result.append(trajectoryInfo[i])
+        }
+
+        return result
+    }
+    
+    private static func checkIsTailIndexSendFail(trajectoryInfo: [TrajectoryInfo], sendFailUvdIndexes: [Int]) -> Bool {
+        var isTailIndexSendFail: Bool = false
+        let tailIndex = trajectoryInfo[0].uvd.index
+        if sendFailUvdIndexes.contains(tailIndex) {
+            isTailIndexSendFail = true
+        }
+        return isTailIndexSendFail
+    }
+    
+    static func stackPostUvdFailData(inputUvd: [UserVelocity]) {
+        if (isNeedRemoveIndexSendFailArray) {
+            var updatedArray = [Int]()
+            for i in 0..<self.sendFailUvdIndexes.count {
+                if sendFailUvdIndexes[i] > validIndex {
+                    updatedArray.append(sendFailUvdIndexes[i])
+                }
+            }
+            sendFailUvdIndexes = updatedArray
+            isNeedRemoveIndexSendFailArray = false
+        }
+        
+        for i in 0..<inputUvd.count {
+            sendFailUvdIndexes.append(inputUvd[i].index)
+        }
     }
 }
